@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Cpu, Database } from 'lucide-react';
+import { Save, Cpu, Database, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getStoredGenLayerConfig, saveGenLayerConfig, type GenLayerConfig } from '../lib/genlayer';
 import { API_BASE, setApiBase } from '../lib/api';
 
@@ -12,6 +12,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
   const [config, setConfig] = useState<GenLayerConfig>(() => getStoredGenLayerConfig());
   const [apiUrl, setApiUrl] = useState<string>(API_BASE);
   const [testing, setTesting] = useState(false);
+
+  const isConfigured = Boolean(
+    config.contractAddress &&
+    config.contractAddress.trim() !== '' &&
+    config.contractAddress.replace(/0/g, '').replace(/x/g, '') !== ''
+  );
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +33,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
       const res = await fetch(config.rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', method: 'net_version', params: [], id: 1 })
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_blockNumber', params: [], id: 1 })
       });
       if (res.ok) {
-        showToast("Successfully connected to GenLayer RPC!", "success");
+        const data = await res.json();
+        if (data.result) {
+          showToast(`Connected to GenLayer RPC! Latest block: ${data.result}`, "success");
+        } else {
+          showToast(`RPC reachable but returned error: ${JSON.stringify(data.error)}`, "info");
+        }
       } else {
-        showToast(`RPC reachable but returned status ${res.status}`, "info");
+        showToast(`RPC returned HTTP status ${res.status}`, "info");
       }
     } catch (err: any) {
       showToast(`Could not connect to GenLayer RPC: ${err.message}`, "error");
@@ -48,8 +59,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
           Platform Configuration & Settings
         </h2>
         <p className="text-xs sm:text-sm text-gray-400 mt-1">
-          Centralize GenLayer network parameters, RPC endpoints, and contract addresses.
+          Centralize GenLayer network parameters, RPC endpoints, and contract addresses with strict truthfulness.
         </p>
+      </div>
+
+      {/* Integration Status Badge Banner */}
+      <div className={`p-4 rounded-2xl border flex items-center gap-3 text-xs ${
+        isConfigured 
+          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+          : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+      }`}>
+        {isConfigured ? (
+          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+        ) : (
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+        )}
+        <div>
+          <span className="font-bold uppercase tracking-wider text-[10px] block">
+            GENLAYER INTEGRATION STATUS: {isConfigured ? 'CONFIGURED' : 'CONFIGURATION-BLOCKED (NOT CONFIGURED)'}
+          </span>
+          {isConfigured ? (
+            <p className="text-[11px] text-emerald-200/80 mt-0.5">
+              Live Intelligent Contract address configured. Adjudication queries route to GenLayer network.
+            </p>
+          ) : (
+            <p className="text-[11px] text-amber-200/80 mt-0.5">
+              Intelligent Contract address is unconfigured (0x000...). To activate live on-chain consensus, deploy contracts/JinniAgentGuard.py on GenLayer Studio (https://studio.genlayer.com) and enter the address below.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-xl">
@@ -73,11 +111,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
                   type="text"
                   value={config.contractAddress}
                   onChange={(e) => setConfig({ ...config, contractAddress: e.target.value.trim() })}
-                  placeholder="e.g. 0x498b9C23C91079Dda25c48dE1E90E9e68b3568F5"
+                  placeholder="0x... (e.g. deployed JinniAgentGuard address)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-mono focus:border-[var(--accent)] outline-none text-xs"
                 />
                 <span className="text-[11px] text-gray-500 mt-1 block">
-                  Address of deployed JinniAgentGuard on GenLayer Studionet. If left blank, system operates in isolated adapter mode.
+                  Address of deployed JinniAgentGuard on GenLayer Studionet. If left blank or all-zeros, system operates in truthful NOT CONFIGURED mode.
                 </span>
               </div>
 
@@ -99,7 +137,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
                       disabled={testing}
                       className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white shrink-0"
                     >
-                      {testing ? "Testing..." : "Test"}
+                      {testing ? "Testing..." : "Test RPC"}
                     </button>
                   </div>
                 </div>
@@ -136,7 +174,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
                   value={config.explorerBaseUrl}
                   onChange={(e) => setConfig({ ...config, explorerBaseUrl: e.target.value.trim() })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-mono text-xs"
-                  placeholder="https://studio.genlayer.com/explorer"
+                  placeholder="https://explorer-studio.genlayer.com"
                 />
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Save } from 'lucide-react';
+import { Sliders, Save, Globe, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PolicyRuleConfig } from '../types/agent';
 
 interface PoliciesViewProps {
@@ -55,6 +55,41 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
         <p className="text-xs sm:text-sm text-gray-400 mt-1">
           Configure deterministic risk limits and guardrails enforced prior to GenLayer submission and wallet execution.
         </p>
+      </div>
+
+      {/* Network Execution Scope Truthfulness Card */}
+      <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4">
+        <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+          <Globe className="w-5 h-5 text-purple-400" />
+          <div>
+            <h3 className="text-sm font-bold text-white font-display">Target Network & Chain Execution Scope</h3>
+            <p className="text-xs text-gray-400">Strict truthfulness: Only chains with live verified execution adapters are enabled.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white text-xs block">Ethereum Sepolia (Chain ID: 11155111)</span>
+              <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block mt-0.5">Active Live Execution</span>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Full MetaMask / Viem client-side wallet execution implemented with deployed test contracts & faucet.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-white text-xs block">Base / Base Sepolia / Arbitrum</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Future Roadmap / Unsupported</span>
+              <p className="text-[11px] text-gray-500 mt-1">
+                Reserved for multi-chain account abstraction expansion. Not enabled for live swap execution.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-xl">

@@ -214,8 +214,8 @@ export default function App() {
       const target = proposals.find(p => p.id === proposalId) || activeProposal;
       let txHash: string | null = null;
 
-      // If connected to wallet, execute the actual trade swap on Sepolia
-      if (walletConnected && address && target?.asset) {
+      // If connected to wallet, execute the actual trade swap on Sepolia (unless it is a demo fixture)
+      if (walletConnected && address && target?.asset && !target.isDemo) {
         showToast("Initiating swap transaction on MetaMask...", "info");
         try {
           const tradeAmt = parseFloat(target.amount || "1.0");
@@ -228,8 +228,8 @@ export default function App() {
           throw new Error(`Wallet execution failed: ${walletErr.message || 'Signature rejected'}`, { cause: walletErr });
         }
       } else {
-        // Preview mode execution
-        txHash = `0xsim_${Date.now()}`;
+        // Preview or demo fixture mode execution
+        txHash = target?.isDemo ? `0xd3m0_demo_execution_${Date.now()}` : `0xsim_${Date.now()}`;
       }
 
       const res = await agentApi.executeProposal({

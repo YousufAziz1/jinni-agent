@@ -16,7 +16,7 @@ export function getStoredGenLayerConfig(): GenLayerConfig {
     chainId: 61999,
     rpcUrl: "https://studio.genlayer.com/api",
     contractAddress: "",
-    explorerBaseUrl: "https://studio.genlayer.com/explorer"
+    explorerBaseUrl: "https://explorer-studio.genlayer.com"
   };
 
   try {
@@ -37,7 +37,10 @@ export function saveGenLayerConfig(config: Partial<GenLayerConfig>) {
 
 export function isGenLayerConfigured(config?: GenLayerConfig): boolean {
   const conf = config || getStoredGenLayerConfig();
-  return Boolean(conf.contractAddress && conf.contractAddress.trim() !== "");
+  if (!conf.contractAddress || conf.contractAddress.trim() === "") return false;
+  // If address is just 0x000... dummy address, it is not configured
+  const clean = conf.contractAddress.toLowerCase().replace(/^0x/, '').replace(/0/g, '');
+  return clean.length > 0;
 }
 
 /**

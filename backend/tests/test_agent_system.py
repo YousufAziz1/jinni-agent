@@ -397,17 +397,17 @@ def test_demo_scenarios_have_correct_four_modes():
     assert violation.genlayer is None
     assert violation.execution.status == "BLOCKED"
 
-    # Scenario 3: Insufficient Evidence
-    insufficient = scenarios[2]
+    # Scenario 3: Conflicting Oracle (Disputed)
+    disputed = scenarios[2]
+    assert disputed.genlayer is not None
+    assert disputed.genlayer.decision == "DISPUTE"
+    assert disputed.execution.status == "BLOCKED"
+
+    # Scenario 4: Insufficient Evidence (Insufficient Data)
+    insufficient = scenarios[3]
     assert insufficient.genlayer is not None
     assert insufficient.genlayer.decision == "INSUFFICIENT_DATA"
     assert insufficient.execution.status == "BLOCKED"
-
-    # Scenario 4: GenLayer Rejection
-    rejection = scenarios[3]
-    assert rejection.genlayer is not None
-    assert rejection.genlayer.decision == "REJECT"
-    assert rejection.execution.status == "BLOCKED"
 
 # -------------------------------------------------------------
 # 5. Legacy JINNI Regression Tests

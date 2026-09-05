@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Award, Copy, Check, Download, Cpu } from 'lucide-react';
+import { Award, Copy, Check, Download, Cpu, AlertTriangle } from 'lucide-react';
 import type { DecisionProof } from '../types/agent';
 import { getDecisionBadgeProps } from '../lib/genlayer';
 
@@ -10,6 +10,7 @@ interface DecisionProofViewProps {
 export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) => {
   const [copied, setCopied] = useState(false);
   const decisionBadge = getDecisionBadgeProps(proof.finalDecision);
+  const isDemo = proof.proposalId.startsWith('demo-') || proof.genlayerTxHash?.startsWith('0xd3m0');
 
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(proof, null, 2));
@@ -32,6 +33,17 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
       {/* Subtle Background Glow */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent)]/10 rounded-full blur-[80px] pointer-events-none" />
 
+      {/* Demo Fixture Warning Banner */}
+      {isDemo && (
+        <div className="mb-6 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-amber-300 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+          <div>
+            <span className="font-bold uppercase tracking-wider text-[10px] block text-amber-400">DEMO FIXTURE</span>
+            This decision proof is a deterministic simulation for hackathon presentation and evaluation. It is isolated from live on-chain execution.
+          </div>
+        </div>
+      )}
+
       {/* Proof Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
         <div className="flex items-center gap-3">
@@ -40,12 +52,14 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-white font-display">Cryptographic Decision Proof</h3>
+              <h3 className="text-lg font-bold text-white font-display">Decision Audit Proof</h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/10 text-purple-300 border border-white/10">
                 v{proof.policyVersion || '1.0.0'}
               </span>
             </div>
-            <p className="text-xs text-gray-400 font-mono">Proposal ID: {proof.proposalId}</p>
+            <p className="text-xs text-gray-400 font-mono">
+              Proposal ID: {proof.proposalId} • Verifiable Execution Receipt
+            </p>
           </div>
         </div>
 
@@ -89,7 +103,7 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
           <span className="text-[10px] uppercase font-bold text-gray-400">Target Asset / Chain</span>
           <p className="font-semibold text-white mt-1">
-            {proof.asset || 'Unavailable'} ({proof.chain || 'Unavailable'})
+            {proof.asset || 'Unavailable'} ({proof.chain || 'Sepolia (11155111)'})
           </p>
         </div>
 
@@ -117,7 +131,7 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
           <span className="text-[10px] uppercase font-bold text-gray-400">GenLayer Contract</span>
           <p className="font-mono text-gray-300 mt-1 truncate">
-            {proof.genlayerContract || 'Unavailable'}
+            {proof.genlayerContract || 'NOT CONFIGURED'}
           </p>
         </div>
 
@@ -160,7 +174,7 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
 
       {/* Audit Trail Timeline */}
       <div>
-        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-2">Cryptographic Audit Trail</span>
+        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-2">Lifecycle Audit Trail</span>
         <div className="space-y-2">
           {proof.auditTrail.map((item, idx) => (
             <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[11px]">

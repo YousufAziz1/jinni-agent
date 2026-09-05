@@ -10,13 +10,14 @@ from agent_domain import (
 def get_demo_scenarios() -> List[AgentProposal]:
     """
     Returns the 4 deterministic, demo-safe scenarios for the GenLayer Agent Tank Hackathon.
-    Visibly tagged with isDemo=True and isolated from live on-chain production state.
+    Visibly tagged with isDemo=True, transparent fixture hashes, and completely isolated
+    from live on-chain production execution.
     """
     now = datetime.datetime.utcnow().isoformat()
 
-    # 1. Safe Proposal (Passes Policy + Approved by GenLayer Guard)
-    safe_proposal = AgentProposal(
-        id="demo-safe-001",
+    # 1. Valid Trade — Approved (Passes Policy + Approved by GenLayer Guard)
+    safe_approved = AgentProposal(
+        id="demo-safe-approved-001",
         createdAt=now,
         source="Venice AI Trading Agent",
         actorType="agent",
@@ -70,14 +71,14 @@ def get_demo_scenarios() -> List[AgentProposal]:
         genlayer=GenLayerResult(
             network="studionet",
             chainId=61999,
-            contractAddress="0x498b9C23C91079Dda25c48dE1E90E9e68b3568F5",
-            txHash="0x89e2c45b81a79f2203d922a10bf8b5a034293f0194857c0e819b78426bb9274a",
+            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
+            txHash="0xd3m0_fixture_approved_tx_hash_00000000000000000000000000000000001",
             txStatus="FINALIZED",
             decision="APPROVE",
-            reasoning="GenLayer multi-validator consensus verified: Trade size ($5) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
+            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: Trade size ($5) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
             submittedAt=now,
             finalizedAt=now,
-            telemetry=None  # Telemetry stays None if not returned from real receipt
+            telemetry=None  # Telemetry stays None when not returned by real receipt; never fabricated
         ),
         execution=ExecutionState(
             status="AWAITING_USER_CONFIRMATION",
@@ -91,7 +92,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
         isDemo=True
     )
 
-    # 2. Policy Violation (Exceeds $500 Max Trade Limit -> Blocked at Policy Stage)
+    # 2. Policy Violation — Blocked (Exceeds $500 Max Trade Limit -> Blocked at Policy Stage)
     policy_violation = AgentProposal(
         id="demo-policy-violation-002",
         createdAt=now,
@@ -143,9 +144,81 @@ def get_demo_scenarios() -> List[AgentProposal]:
         isDemo=True
     )
 
-    # 3. Insufficient Evidence (Critical price/liquidity missing -> Blocked)
+    # 3. Conflicting Oracle — Disputed (DEX spot price diverges 14% from Reference Oracle -> Disputed on GenLayer)
+    conflicting_oracle = AgentProposal(
+        id="demo-conflicting-oracle-003",
+        createdAt=now,
+        source="Arbitrage Discovery Bot",
+        actorType="agent",
+        originAgentId="agent-flash-arb",
+        destinationAgentId=None,
+        actionType="SWAP",
+        asset="WETH",
+        chain="Sepolia",
+        chainId=11155111,
+        amount="0.1",
+        amountUsd="260.0",
+        slippage="0.8%",
+        route="DEX Pair Spot Pool",
+        policyId="default-policy",
+        policyVersion="1.0.0",
+        policyResult="PASS",
+        policyFailureReason=None,
+        agentRationale="Detected deep discount on DEX spot pool for WETH compared to major centralized exchange feeds.",
+        evidence=[
+            EvidenceItem(
+                id="ev-disp-1",
+                source="DEX Spot Reserve",
+                type="DEX_SPOT_PRICE",
+                value="2250.0",
+                timestamp=now,
+                status="VERIFIED",
+                details="AMM pool instantaneous spot execution price: $2,250.00"
+            ),
+            EvidenceItem(
+                id="ev-disp-2",
+                source="Chainlink Reference Feed",
+                type="ORACLE_PRICE",
+                value="2620.0",
+                timestamp=now,
+                status="VERIFIED",
+                details="Chainlink consolidated oracle price: $2,620.00 (14.1% divergence)"
+            ),
+            EvidenceItem(
+                id="ev-disp-3",
+                source="Pool Depth Inspector",
+                type="LIQUIDITY_CHECK",
+                value="125000.0",
+                timestamp=now,
+                status="VERIFIED",
+                details="Pool depth satisfies minimum liquidity threshold"
+            )
+        ],
+        genlayer=GenLayerResult(
+            network="studionet",
+            chainId=61999,
+            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
+            txHash="0xd3m0_fixture_disputed_tx_hash_00000000000000000000000000000000001",
+            txStatus="FINALIZED",
+            decision="DISPUTE",
+            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: DEX spot price ($2,250.00) diverges by 14.1% from reference oracle ($2,620.00), exceeding 5.0% tolerance. Flagged as oracle manipulation risk.",
+            submittedAt=now,
+            finalizedAt=now,
+            telemetry=None
+        ),
+        execution=ExecutionState(
+            status="BLOCKED",
+            requiresHumanConfirmation=True,
+            userConfirmed=False,
+            error="Execution blocked: GenLayer flagged an on-chain price dispute between DEX pool and reference oracle."
+        ),
+        state="DISPUTED",
+        isDemo=True
+    )
+
+    # 4. Insufficient Evidence — Insufficient Data (Critical price/liquidity missing -> Blocked)
     insufficient_evidence = AgentProposal(
-        id="demo-insufficient-evidence-003",
+        id="demo-insufficient-evidence-004",
         createdAt=now,
         source="DeFi Arbitrage Agent",
         actorType="agent",
@@ -196,11 +269,11 @@ def get_demo_scenarios() -> List[AgentProposal]:
         genlayer=GenLayerResult(
             network="studionet",
             chainId=61999,
-            contractAddress="0x498b9C23C91079Dda25c48dE1E90E9e68b3568F5",
-            txHash="0x3429bb781a79f2203d922a10bf8b5a089e2c45b810194857c0e819b78426bb9",
+            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
+            txHash="0xd3m0_fixture_insufficient_tx_hash_00000000000000000000000000000000001",
             txStatus="FINALIZED",
             decision="INSUFFICIENT_DATA",
-            reasoning="Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
+            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
             submittedAt=now,
             finalizedAt=now,
             telemetry=None
@@ -215,67 +288,4 @@ def get_demo_scenarios() -> List[AgentProposal]:
         isDemo=True
     )
 
-    # 4. GenLayer Rejection (Abnormal slippage and suspicious routing flagged by GenLayer consensus)
-    genlayer_rejection = AgentProposal(
-        id="demo-genlayer-rejection-004",
-        createdAt=now,
-        source="External Partner Agent",
-        actorType="agent",
-        originAgentId="agent-third-party",
-        destinationAgentId="agent-jinni-alpha",
-        actionType="SERVICE_PAYMENT",
-        asset="USDC",
-        chain="Sepolia",
-        chainId=11155111,
-        amount="100.0",
-        amountUsd="100.0",
-        slippage="8.5%",
-        route="External Routing Contract",
-        policyId="default-policy",
-        policyVersion="1.0.0",
-        policyResult="PASS",
-        policyFailureReason=None,
-        agentRationale="Payment for automated off-chain dataset indexing services rendered.",
-        evidence=[
-            EvidenceItem(
-                id="ev-rej-1",
-                source="CryptoCompare Index",
-                type="PRICE_FEED",
-                value="$1.00 / USDC",
-                timestamp=now,
-                status="VERIFIED",
-                details="Standard peg verified"
-            ),
-            EvidenceItem(
-                id="ev-rej-2",
-                source="Etherscan Sepolia",
-                type="CONTRACT_VERIFICATION",
-                value="0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-                timestamp=now,
-                status="VERIFIED",
-                details="Standard USDC Token verified"
-            )
-        ],
-        genlayer=GenLayerResult(
-            network="studionet",
-            chainId=61999,
-            contractAddress="0x498b9C23C91079Dda25c48dE1E90E9e68b3568F5",
-            txHash="0x918b5a034293f0194857c0e819b78426bb9274a89e2c45b81a79f2203d922a10",
-            txStatus="FINALIZED",
-            decision="REJECT",
-            reasoning="GenLayer intelligent multi-validator consensus rejected proposal: Abnormal slippage tolerance (8.5%) and external routing signature pose critical exploit risks.",
-            submittedAt=now,
-            finalizedAt=now,
-            telemetry=None
-        ),
-        execution=ExecutionState(
-            status="BLOCKED",
-            requiresHumanConfirmation=True,
-            userConfirmed=False,
-            error="Execution blocked: GenLayer Intelligent Contract independently rejected this transaction."
-        ),
-        state="REJECTED",
-        isDemo=True
-    )
-
-    return [safe_proposal, policy_violation, insufficient_evidence, genlayer_rejection]
+    return [safe_approved, policy_violation, conflicting_oracle, insufficient_evidence]

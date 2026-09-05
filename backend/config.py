@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     GENLAYER_CHAIN_ID: int = int(os.getenv("GENLAYER_CHAIN_ID", "61999"))
     GENLAYER_RPC: str = os.getenv("GENLAYER_RPC", "https://studio.genlayer.com/api")
     JINNI_AGENT_CONTRACT_ADDRESS: str = os.getenv("JINNI_AGENT_CONTRACT_ADDRESS", "")
-    GENLAYER_EXPLORER_BASE_URL: str = os.getenv("GENLAYER_EXPLORER_BASE_URL", "https://studio.genlayer.com/explorer")
+    GENLAYER_EXPLORER_BASE_URL: str = os.getenv("GENLAYER_EXPLORER_BASE_URL", "https://explorer-studio.genlayer.com")
 
     class Config:
         env_file = ".env"

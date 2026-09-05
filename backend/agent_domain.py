@@ -1,55 +1,57 @@
-from typing import Literal, Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
-import datetime
 
+# Core Status Types
 PolicyResult = Literal["PASS", "FAIL", "UNKNOWN"]
-GenLayerDecision = Literal[
-    "APPROVE",
-    "REJECT",
-    "DISPUTE",
-    "INSUFFICIENT_DATA",
-    "UNAVAILABLE"
-]
+GenLayerDecision = Literal["APPROVE", "REJECT", "DISPUTE", "INSUFFICIENT_DATA", "UNAVAILABLE"]
 
 ProposalState = Literal[
     "DRAFT",
-    "PROPOSED",
     "POLICY_CHECKING",
-    "POLICY_FAILED",
     "POLICY_PASSED",
-    "SUBMITTING_TO_GENLAYER",
+    "POLICY_FAILED",
     "GENLAYER_PENDING",
     "GENLAYER_ACCEPTED",
     "GENLAYER_FINALIZED",
-    "APPROVED",
-    "REJECTED",
-    "DISPUTED",
-    "INSUFFICIENT_DATA",
-    "READY_FOR_EXECUTION",
     "AWAITING_CONFIRMATION",
+    "READY_FOR_EXECUTION",
     "EXECUTING",
     "EXECUTED",
-    "EXECUTION_FAILED",
-    "CANCELLED"
+    "REJECTED",
+    "DISPUTED",
+    "INSUFFICIENT_DATA"
 ]
 
 ExecutionStatus = Literal[
-    "BLOCKED",
+    "IDLE",
+    "WAITING_FOR_POLICY",
     "WAITING_FOR_GENLAYER",
-    "READY",
     "AWAITING_USER_CONFIRMATION",
+    "READY",
     "EXECUTING",
     "EXECUTED",
+    "BLOCKED",
+    "REJECTED",
     "FAILED"
 ]
 
 class EvidenceItem(BaseModel):
     id: str
     source: str
-    type: str  # PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION, RISK_SCORE, WALLET_BALANCE
-    value: Optional[str] = None
+    type: Literal[
+        "PRICE_FEED",
+        "DEX_SPOT_PRICE",
+        "ORACLE_PRICE",
+        "REFERENCE_PRICE",
+        "LIQUIDITY_CHECK",
+        "CONTRACT_VERIFICATION",
+        "SIMULATION",
+        "PYTH_FEED",
+        "CHAINLINK_FEED"
+    ]
+    value: Optional[Any] = None
     timestamp: Optional[str] = None
-    status: Literal["VERIFIED", "UNAVAILABLE", "STALE", "DISPUTED"]
+    status: Literal["VERIFIED", "UNAVAILABLE", "DISPUTED", "STALE"] = "VERIFIED"
     details: Optional[str] = None
 
 class GenLayerTelemetry(BaseModel):
@@ -60,22 +62,21 @@ class GenLayerTelemetry(BaseModel):
     consensusPercentage: Optional[float] = None
     confidence: Optional[str] = None
     rounds: Optional[int] = None
-    latencyMs: Optional[float] = None
+    latencyMs: Optional[int] = None
     majorityAgreement: Optional[bool] = None
     resultName: Optional[str] = None
 
 class GenLayerResult(BaseModel):
-    network: str
-    chainId: Optional[int] = None
+    network: str = "studionet"
+    chainId: int = 61999
     contractAddress: Optional[str] = None
     txHash: Optional[str] = None
     txStatus: Optional[Literal["PENDING", "ACCEPTED", "FINALIZED", "FAILED", "UNKNOWN"]] = None
-    decision: GenLayerDecision
+    decision: GenLayerDecision = "UNAVAILABLE"
     reasoning: Optional[str] = None
     submittedAt: Optional[str] = None
     finalizedAt: Optional[str] = None
     telemetry: Optional[GenLayerTelemetry] = None
-    rawReceipt: Optional[Dict[str, Any]] = None
 
 class ExecutionState(BaseModel):
     status: ExecutionStatus
@@ -139,7 +140,9 @@ class PolicyRuleConfig(BaseModel):
     maxTransactionValue: float = 500.0
     maxDailySpend: float = 1000.0
     maxSlippage: float = 1.0
-    allowedChains: List[int] = Field(default_factory=lambda: [11155111, 1, 61999])
+    # Active live wallet execution is exclusively supported on Ethereum Sepolia (11155111)
+    # Other chains (e.g. Base 8453, Base Sepolia 84532) are reserved for future roadmap
+    allowedChains: List[int] = Field(default_factory=lambda: [11155111])
     allowedTokens: List[str] = Field(default_factory=lambda: ["USDC", "LINK", "UNI", "WETH"])
     blockedTokens: List[str] = Field(default_factory=list)
     minLiquidityUsd: Optional[float] = 10000.0
