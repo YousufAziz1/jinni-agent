@@ -1,15 +1,20 @@
 export let API_BASE = (() => {
-  const envUrl = (import.meta as any).env?.VITE_API_URL
-  if (envUrl && envUrl.trim() !== '') {
-    return envUrl.trim()
-  }
+  try {
+    const envUrl = (import.meta as any).env?.VITE_API_URL
+    if (envUrl && envUrl.trim() !== '') {
+      return envUrl.trim()
+    }
+  } catch {}
 
-  const saved = localStorage.getItem('JINNI_API_URL')
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  const hasWindow = typeof window !== 'undefined'
+  const saved = hasWindow && window.localStorage ? window.localStorage.getItem('JINNI_API_URL') : null
+  const isLocalhost = hasWindow ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') : true
   
   if (saved) {
     if (!isLocalhost && saved.includes('localhost')) {
-      localStorage.removeItem('JINNI_API_URL')
+      if (hasWindow && window.localStorage) {
+        window.localStorage.removeItem('JINNI_API_URL')
+      }
       return 'https://jinni-6wfe.onrender.com/api'
     }
     return saved.trim()
@@ -19,7 +24,9 @@ export let API_BASE = (() => {
 })().trim()
 
 export const setApiBase = (url: string) => {
-  localStorage.setItem('JINNI_API_URL', url.trim())
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem('JINNI_API_URL', url.trim())
+  }
   API_BASE = url.trim()
 }
 

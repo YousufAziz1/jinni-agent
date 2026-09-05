@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import List, Optional
 from agent_domain import (
     AgentProposal,
     EvidenceItem,
@@ -9,15 +9,15 @@ from agent_domain import (
 
 def get_demo_scenarios() -> List[AgentProposal]:
     """
-    Returns the 4 deterministic, demo-safe scenarios for the GenLayer Agent Tank Hackathon.
+    Returns the 4 canonical deterministic, demo-safe scenarios for the GenLayer Agent Tank Hackathon.
     Visibly tagged with isDemo=True, transparent fixture hashes, and completely isolated
     from live on-chain production execution.
     """
-    now = datetime.datetime.utcnow().isoformat()
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    # 1. Valid Trade — Approved (Passes Policy + Approved by GenLayer Guard)
+    # 1. Safe Proposal — Approved (Passes Policy + Approved by GenLayer Guard Simulation)
     safe_approved = AgentProposal(
-        id="demo-safe-approved-001",
+        id="demo-safe-001",
         createdAt=now,
         source="Autonomous Trading Agent",
         actorType="agent",
@@ -75,7 +75,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
             txHash="0xd3m0_fixture_approved_tx_hash_00000000000000000000000000000000001",
             txStatus="FINALIZED",
             decision="APPROVE",
-            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: Trade size ($5) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
+            reasoning="[DEMO FIXTURE] GenLayer adjudication simulation: Trade size ($5) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
             submittedAt=now,
             finalizedAt=now,
             telemetry=None  # Telemetry stays None when not returned by real receipt; never fabricated
@@ -86,7 +86,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
             userConfirmed=False,
             txHash=None,
             executedAt=None,
-            mode="WALLET"
+            mode="SIMULATION"
         ),
         state="AWAITING_CONFIRMATION",
         isDemo=True
@@ -138,87 +138,16 @@ def get_demo_scenarios() -> List[AgentProposal]:
             status="BLOCKED",
             requiresHumanConfirmation=True,
             userConfirmed=False,
-            error="Policy rule violation: Proposed spend of $2,500 exceeds maximum allowable single trade ceiling of $500."
+            error="Policy rule violation: Proposed spend of $2,500 exceeds maximum allowable single trade ceiling of $500.",
+            mode="SIMULATION"
         ),
         state="POLICY_FAILED",
         isDemo=True
     )
 
-    # 3. Conflicting Oracle — Disputed (DEX spot price diverges 14% from Reference Oracle -> Disputed on GenLayer)
-    conflicting_oracle = AgentProposal(
-        id="demo-conflicting-oracle-003",
-        createdAt=now,
-        source="Arbitrage Discovery Bot",
-        actorType="agent",
-        originAgentId="agent-flash-arb",
-        destinationAgentId=None,
-        actionType="SWAP",
-        asset="WETH",
-        chain="Sepolia",
-        chainId=11155111,
-        amount="0.1",
-        amountUsd="260.0",
-        slippage="0.8%",
-        route="DEX Pair Spot Pool",
-        policyId="default-policy",
-        policyVersion="1.0.0",
-        policyResult="PASS",
-        policyFailureReason=None,
-        agentRationale="Detected deep discount on DEX spot pool for WETH compared to major centralized exchange feeds.",
-        evidence=[
-            EvidenceItem(
-                id="ev-disp-1",
-                source="DEX Spot Reserve",
-                type="DEX_SPOT_PRICE",
-                value="2250.0",
-                timestamp=now,
-                status="VERIFIED",
-                details="AMM pool instantaneous spot execution price: $2,250.00"
-            ),
-            EvidenceItem(
-                id="ev-disp-2",
-                source="Chainlink Reference Feed",
-                type="ORACLE_PRICE",
-                value="2620.0",
-                timestamp=now,
-                status="VERIFIED",
-                details="Chainlink consolidated oracle price: $2,620.00 (14.1% divergence)"
-            ),
-            EvidenceItem(
-                id="ev-disp-3",
-                source="Pool Depth Inspector",
-                type="LIQUIDITY_CHECK",
-                value="125000.0",
-                timestamp=now,
-                status="VERIFIED",
-                details="Pool depth satisfies minimum liquidity threshold"
-            )
-        ],
-        genlayer=GenLayerResult(
-            network="studionet",
-            chainId=61999,
-            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-            txHash="0xd3m0_fixture_disputed_tx_hash_00000000000000000000000000000000001",
-            txStatus="FINALIZED",
-            decision="DISPUTE",
-            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: DEX spot price ($2,250.00) diverges by 14.1% from reference oracle ($2,620.00), exceeding 5.0% tolerance. Flagged as oracle manipulation risk.",
-            submittedAt=now,
-            finalizedAt=now,
-            telemetry=None
-        ),
-        execution=ExecutionState(
-            status="BLOCKED",
-            requiresHumanConfirmation=True,
-            userConfirmed=False,
-            error="Execution blocked: GenLayer flagged an on-chain price dispute between DEX pool and reference oracle."
-        ),
-        state="DISPUTED",
-        isDemo=True
-    )
-
-    # 4. Insufficient Evidence — Insufficient Data (Critical price/liquidity missing -> Blocked)
+    # 3. Insufficient Evidence — Insufficient Data (Critical price/liquidity missing -> Blocked)
     insufficient_evidence = AgentProposal(
-        id="demo-insufficient-evidence-004",
+        id="demo-insufficient-evidence-003",
         createdAt=now,
         source="DeFi Arbitrage Agent",
         actorType="agent",
@@ -273,7 +202,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
             txHash="0xd3m0_fixture_insufficient_tx_hash_00000000000000000000000000000000001",
             txStatus="FINALIZED",
             decision="INSUFFICIENT_DATA",
-            reasoning="[DEMO FIXTURE] GenLayer multi-validator consensus simulation: Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
+            reasoning="[DEMO FIXTURE] GenLayer adjudication simulation: Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
             submittedAt=now,
             finalizedAt=now,
             telemetry=None
@@ -282,10 +211,90 @@ def get_demo_scenarios() -> List[AgentProposal]:
             status="BLOCKED",
             requiresHumanConfirmation=True,
             userConfirmed=False,
-            error="Execution blocked: Insufficient verifiable evidence to justify financial commitment."
+            error="Execution blocked: Insufficient verifiable evidence to justify financial commitment.",
+            mode="SIMULATION"
         ),
         state="INSUFFICIENT_DATA",
         isDemo=True
     )
 
-    return [safe_approved, policy_violation, conflicting_oracle, insufficient_evidence]
+    # 4. GenLayer Rejection — Excessive Slippage (8.5% slippage -> Blocked & Rejected)
+    genlayer_rejection = AgentProposal(
+        id="demo-genlayer-rejection-004",
+        createdAt=now,
+        source="Arbitrage Discovery Bot",
+        actorType="agent",
+        originAgentId="agent-flash-arb",
+        destinationAgentId=None,
+        actionType="SWAP",
+        asset="WETH",
+        chain="Sepolia",
+        chainId=11155111,
+        amount="0.1",
+        amountUsd="260.0",
+        slippage="8.5%",
+        route="DEX Pair Spot Pool",
+        policyId="default-policy",
+        policyVersion="1.0.0",
+        policyResult="PASS",
+        policyFailureReason=None,
+        agentRationale="Attempting rapid swap on low-liquidity pool with 8.5% slippage tolerance to capture fleeting arbitrage window.",
+        evidence=[
+            EvidenceItem(
+                id="ev-rej-1",
+                source="DEX Spot Reserve",
+                type="DEX_SPOT_PRICE",
+                value="2250.0",
+                timestamp=now,
+                status="VERIFIED",
+                details="AMM pool instantaneous spot execution price: $2,250.00"
+            ),
+            EvidenceItem(
+                id="ev-rej-2",
+                source="Slippage Monitor",
+                type="SLIPPAGE_ANALYSIS",
+                value="8.5%",
+                timestamp=now,
+                status="DISPUTED",
+                details="Proposed slippage (8.5%) exceeds the maximum allowable safety threshold of 1.0%"
+            )
+        ],
+        genlayer=GenLayerResult(
+            network="studionet",
+            chainId=61999,
+            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
+            txHash="0xd3m0_fixture_rejected_tx_hash_00000000000000000000000000000000001",
+            txStatus="FINALIZED",
+            decision="REJECT",
+            reasoning="[DEMO FIXTURE] GenLayer adjudication rule rejection: Proposed slippage of 8.5% exceeds the safety threshold (max 1.0%). High MEV sandwich risk detected.",
+            submittedAt=now,
+            finalizedAt=now,
+            telemetry=None
+        ),
+        execution=ExecutionState(
+            status="BLOCKED",
+            requiresHumanConfirmation=True,
+            userConfirmed=False,
+            error="Execution blocked: GenLayer adjudication rejected the trade due to excessive slippage (8.5%).",
+            mode="SIMULATION"
+        ),
+        state="REJECTED",
+        isDemo=True
+    )
+
+    return [safe_approved, policy_violation, insufficient_evidence, genlayer_rejection]
+
+
+SCENARIO_ALIASES = {
+    "demo-safe-approved-001": "demo-safe-001",
+    "demo-conflicting-oracle-003": "demo-genlayer-rejection-004",
+    "demo-insufficient-evidence-004": "demo-insufficient-evidence-003",
+}
+
+def get_demo_scenario_by_id(scenario_id: str) -> Optional[AgentProposal]:
+    """Resolves scenario ID using canonical ID or legacy alias."""
+    norm_id = SCENARIO_ALIASES.get(scenario_id, scenario_id)
+    for s in get_demo_scenarios():
+        if s.id == norm_id:
+            return s
+    return None

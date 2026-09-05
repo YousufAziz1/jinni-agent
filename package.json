@@ -1,0 +1,23 @@
+{
+  "name": "jinni-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JINNI Agent — Autonomous actions. Independent judgment.",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix frontend run lint",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "test": "npm --prefix frontend test"
+  },
+  "keywords": [
+    "jinni-agent",
+    "genlayer",
+    "intelligent-contracts",
+    "web3",
+    "autonomous-agent",
+    "policy-engine"
+  ],
+  "author": "JINNI Agent Team",
+  "license": "MIT"
+}

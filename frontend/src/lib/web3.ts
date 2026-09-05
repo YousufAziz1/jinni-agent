@@ -128,10 +128,35 @@ export function getWalletClient() {
   })
 }
 
-export async function connectWallet(): Promise<string> {
+export async function connectWallet(): Promise<{ address: string; chainId: number | null }> {
   const client = getWalletClient()
   const [address] = await client.requestAddresses()
-  return address
+  const chainId = await getWalletChainId()
+  return { address, chainId }
+}
+
+export async function getWalletChainId(): Promise<number | null> {
+  if (typeof window === 'undefined' || !window.ethereum) return null;
+  try {
+    const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+    if (!chainIdHex) return null;
+    return parseInt(chainIdHex, 16);
+  } catch {
+    return null;
+  }
+}
+
+export async function switchToSepolia(): Promise<boolean> {
+  if (typeof window === 'undefined' || !window.ethereum) return false;
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0xaa36a7' }]
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function getBalances(userAddress: string) {

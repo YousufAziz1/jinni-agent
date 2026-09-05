@@ -72,9 +72,9 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-white text-xs block">Ethereum Sepolia (Chain ID: 11155111)</span>
-              <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block mt-0.5">Active Live Execution</span>
+              <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block mt-0.5">Active Execution Adapter</span>
               <p className="text-[11px] text-gray-400 mt-1">
-                Full MetaMask / Viem client-side wallet execution implemented with deployed test contracts & faucet.
+                MetaMask / Viem client-side swap execution supported when connected to Sepolia.
               </p>
             </div>
           </div>
@@ -82,10 +82,10 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold text-white text-xs block">Base / Base Sepolia / Arbitrum</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Future Roadmap / Unsupported</span>
+              <span className="font-bold text-white text-xs block">Base / Arbitrum / Mainnet</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Unsupported / Roadmap</span>
               <p className="text-[11px] text-gray-500 mt-1">
-                Reserved for multi-chain account abstraction expansion. Not enabled for live swap execution.
+                Reserved for future multi-chain account abstraction. Transactions on these networks are blocked.
               </p>
             </div>
           </div>
@@ -104,7 +104,7 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
             </div>
           </div>
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-            ENFORCED SERVER-SIDE
+            POLICY ENGINE ACTIVE
           </span>
         </div>
 

@@ -64,7 +64,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
 
   // Stage 7: Execution Result
   let stage7Status: "completed" | "active" | "blocked" | "pending" = "pending";
-  if (proposal.execution.status === "EXECUTED") stage7Status = "completed";
+  if (proposal.execution.status === "EXECUTED" && !proposal.isDemo) stage7Status = "completed";
   else if (proposal.execution.status === "EXECUTING") stage7Status = "active";
   else if (stage6Status === "blocked" || proposal.execution.status === "FAILED") stage7Status = "blocked";
 
@@ -92,15 +92,17 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
     },
     {
       step: 4,
-      title: "Consensus Tx",
+      title: "GenLayer Tx",
       desc: proposal.genlayer?.txStatus || "Pending",
       status: stage4Status,
       icon: <Cpu className="w-4 h-4" />
     },
     {
       step: 5,
-      title: "Final Decision",
-      desc: proposal.genlayer?.decision || "Pending",
+      title: "Decision",
+      desc: proposal.isDemo 
+        ? `Demo: ${proposal.genlayer?.decision || "Pending"}` 
+        : (proposal.genlayer?.decision || "Pending"),
       status: stage5Status,
       icon: <Scale className="w-4 h-4" />
     },
@@ -113,8 +115,12 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
     },
     {
       step: 7,
-      title: "Execution Result",
-      desc: proposal.execution.txHash ? "Executed on Sepolia" : "Not Executed",
+      title: "Execution",
+      desc: proposal.execution.txHash && !proposal.isDemo 
+        ? "Executed on Sepolia" 
+        : proposal.isDemo 
+        ? "Demo Fixture" 
+        : "Not Executed",
       status: stage7Status,
       icon: <CheckCircle2 className="w-4 h-4" />
     }
@@ -122,6 +128,17 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
 
   return (
     <div className="w-full bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-5 shadow-xl">
+      {/* Persistent Demo Fixture Banner */}
+      {proposal.isDemo && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-amber-300 font-bold">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>DEMO FIXTURE — NOT A LIVE TRANSACTION</span>
+          </div>
+          <span className="text-[10px] text-amber-400/80 font-mono">Isolated deterministic simulation</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)] animate-ping" />
@@ -175,7 +192,11 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
           <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-amber-300">Human Confirmation Required: </span>
-            GenLayer approved this action, but your policy requires explicit human confirmation before funds can move on Sepolia.
+            {proposal.isDemo ? (
+              <span>Demo scenario approved by GenLayer simulation rule. In production, this step requires explicit MetaMask signature.</span>
+            ) : (
+              <span>GenLayer approved this action. Policy requires explicit human confirmation before funds can move on Sepolia.</span>
+            )}
           </div>
         </div>
       )}

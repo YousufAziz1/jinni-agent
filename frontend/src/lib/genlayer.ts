@@ -31,7 +31,9 @@ export function getStoredGenLayerConfig(): GenLayerConfig {
 export function saveGenLayerConfig(config: Partial<GenLayerConfig>) {
   const current = getStoredGenLayerConfig();
   const updated = { ...current, ...config };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  } catch {}
   return updated;
 }
 
@@ -45,8 +47,13 @@ export function isGenLayerConfigured(config?: GenLayerConfig): boolean {
 
 /**
  * Returns user-friendly UI formatting for GenLayer decision states.
+ * Respects strict truthfulness: distinguishes demo fixtures from live contract responses.
  */
-export function getDecisionBadgeProps(decision: GenLayerDecision): {
+export function getDecisionBadgeProps(
+  decision: GenLayerDecision,
+  isDemo?: boolean,
+  hasLiveTx?: boolean
+): {
   label: string;
   bgClass: string;
   textClass: string;
@@ -56,7 +63,7 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
   switch (decision) {
     case "APPROVE":
       return {
-        label: "GENLAYER APPROVED",
+        label: isDemo ? "DEMO APPROVE — FIXTURE" : hasLiveTx ? "APPROVE — LIVE CONTRACT RESPONSE" : "DEMO APPROVE",
         bgClass: "bg-emerald-500/10",
         textClass: "text-emerald-400",
         borderClass: "border-emerald-500/30",
@@ -64,7 +71,7 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
       };
     case "REJECT":
       return {
-        label: "GENLAYER REJECTED",
+        label: isDemo ? "DEMO REJECT — FIXTURE RULE" : hasLiveTx ? "REJECT — LIVE CONTRACT RESPONSE" : "DEMO REJECTED",
         bgClass: "bg-rose-500/10",
         textClass: "text-rose-400",
         borderClass: "border-rose-500/30",
@@ -72,7 +79,7 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
       };
     case "DISPUTE":
       return {
-        label: "CONSENSUS DISPUTED",
+        label: isDemo ? "DEMO DISPUTE — FIXTURE" : hasLiveTx ? "DISPUTE — LIVE CONTRACT RESPONSE" : "CONSENSUS DISPUTED",
         bgClass: "bg-amber-500/10",
         textClass: "text-amber-400",
         borderClass: "border-amber-500/30",
@@ -80,7 +87,7 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
       };
     case "INSUFFICIENT_DATA":
       return {
-        label: "INSUFFICIENT EVIDENCE",
+        label: isDemo ? "DEMO INSUFFICIENT EVIDENCE — FIXTURE" : "INSUFFICIENT DATA",
         bgClass: "bg-purple-500/10",
         textClass: "text-purple-400",
         borderClass: "border-purple-500/30",
@@ -89,7 +96,7 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
     case "UNAVAILABLE":
     default:
       return {
-        label: "NOT CONFIGURED / UNAVAILABLE",
+        label: "GENLAYER DECISION — UNAVAILABLE",
         bgClass: "bg-gray-500/10",
         textClass: "text-gray-400",
         borderClass: "border-gray-500/30",
@@ -100,11 +107,12 @@ export function getDecisionBadgeProps(decision: GenLayerDecision): {
 
 /**
  * Renders telemetry with strict truthfulness.
- * If telemetry field is null or undefined, returns "Unavailable" or "Not returned by GenLayer".
+ * If telemetry field is null, undefined, or missing, returns "TELEMETRY NOT RETURNED".
+ * Never fabricates or infers consensus metrics.
  */
 export function formatTelemetryField(value: string | number | boolean | null | undefined, suffix = ""): string {
-  if (value === null || value === undefined) {
-    return "Unavailable";
+  if (value === null || value === undefined || value === "") {
+    return "TELEMETRY NOT RETURNED";
   }
   if (typeof value === "boolean") {
     return value ? "Yes" : "No";

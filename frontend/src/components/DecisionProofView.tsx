@@ -9,8 +9,9 @@ interface DecisionProofViewProps {
 
 export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) => {
   const [copied, setCopied] = useState(false);
-  const decisionBadge = getDecisionBadgeProps(proof.finalDecision);
-  const isDemo = proof.proposalId.startsWith('demo-') || proof.genlayerTxHash?.startsWith('0xd3m0');
+  const isDemo = proof.proposalId.startsWith('demo-') || (proof.genlayerTxHash?.startsWith('0xd3m0') ?? false);
+  const isLiveTx = !isDemo && Boolean(proof.genlayerTxHash && !proof.genlayerTxHash.startsWith("0xd3m0"));
+  const decisionBadge = getDecisionBadgeProps(proof.finalDecision, isDemo, isLiveTx);
 
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(proof, null, 2));
@@ -38,8 +39,10 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
         <div className="mb-6 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-amber-300 text-xs">
           <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
           <div>
-            <span className="font-bold uppercase tracking-wider text-[10px] block text-amber-400">DEMO FIXTURE</span>
-            This decision proof is a deterministic simulation for hackathon presentation and evaluation. It is isolated from live on-chain execution.
+            <span className="font-bold uppercase tracking-wider text-[10px] block text-amber-400">
+              DEMO FIXTURE — NOT A LIVE TRANSACTION
+            </span>
+            This decision proof is a deterministic simulation for review and demonstration. It is isolated from live on-chain execution and does not represent an executed Sepolia settlement.
           </div>
         </div>
       )}
@@ -58,7 +61,7 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
               </span>
             </div>
             <p className="text-xs text-gray-400 font-mono">
-              Proposal ID: {proof.proposalId} • Verifiable Execution Receipt
+              Proposal ID: {proof.proposalId} • Adjudication & Evidence Record
             </p>
           </div>
         </div>
@@ -76,7 +79,7 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
           <button
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all"
-            title="Download Certificate"
+            title="Download Record"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download</span>
@@ -138,52 +141,34 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
           <span className="text-[10px] uppercase font-bold text-gray-400">GenLayer Transaction</span>
           <p className="font-mono text-gray-300 mt-1 truncate">
-            {proof.genlayerTxHash || 'Unavailable'}
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
-          <span className="text-[10px] uppercase font-bold text-gray-400">Consensus Status</span>
-          <p className="font-semibold text-purple-300 mt-1">
-            {proof.txStatus || 'Unavailable'}
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
-          <span className="text-[10px] uppercase font-bold text-gray-400">Adjudication Timestamp</span>
-          <p className="text-gray-300 mt-1">
-            {proof.decisionTimestamp || 'Unavailable'}
-          </p>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
-          <span className="text-[10px] uppercase font-bold text-gray-400">Execution Status</span>
-          <p className="font-semibold text-white mt-1">
-            {proof.executionStatus} {proof.executionTxHash ? `(Tx: ${proof.executionTxHash.slice(0, 8)}...)` : ''}
+            {proof.genlayerTxHash || 'NOT SUBMITTED'}
           </p>
         </div>
       </div>
 
       {/* Decision Reasoning */}
       <div className="mb-6">
-        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Contract Decision Rationale</span>
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 text-xs text-gray-300 leading-relaxed font-mono">
-          {proof.decisionReasoning || 'Unavailable'}
+        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+          Adjudication Reasoning
+        </h4>
+        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 text-xs text-gray-300 leading-relaxed">
+          {proof.decisionReasoning || "No explicit reasoning was returned for this adjudication."}
         </div>
       </div>
 
-      {/* Audit Trail Timeline */}
+      {/* Multi-Stage Audit Trail */}
       <div>
-        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-2">Lifecycle Audit Trail</span>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
+          Lifecycle Audit Trail
+        </h4>
         <div className="space-y-2">
-          {proof.auditTrail.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[11px]">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                <span className="font-bold text-white">{item.stage}</span>
-                <span className="text-gray-400 truncate max-w-md">{item.details}</span>
+          {proof.auditTrail.map((stage, idx) => (
+            <div key={idx} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-start justify-between text-xs">
+              <div>
+                <span className="font-mono font-bold text-purple-400">{stage.stage}</span>
+                <p className="text-gray-300 mt-0.5">{stage.details}</p>
               </div>
-              <span className="text-gray-500 font-mono text-[10px] shrink-0">{item.timestamp}</span>
+              <span className="text-[10px] text-gray-500 font-mono shrink-0 ml-4">{stage.timestamp}</span>
             </div>
           ))}
         </div>

@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Cpu, Database, AlertTriangle, CheckCircle, Bot, Sparkles } from 'lucide-react';
+import { Save, Cpu, AlertTriangle, Sparkles, Database, Bot } from 'lucide-react';
 import { getStoredGenLayerConfig, saveGenLayerConfig, type GenLayerConfig } from '../lib/genlayer';
 import { API_BASE, setApiBase } from '../lib/api';
 import { agentApi, type AIProviderStatus } from '../lib/agentApi';
 
+import type { RuntimeCapability } from '../lib/runtimeCapability';
+import { RuntimeCapabilityBar } from '../components/RuntimeCapabilityBar';
+
 interface SettingsViewProps {
   onRefreshStatus: () => void;
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  capability?: RuntimeCapability;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, showToast }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, showToast, capability }) => {
   const [config, setConfig] = useState<GenLayerConfig>(() => getStoredGenLayerConfig());
   const [apiUrl, setApiUrl] = useState<string>(API_BASE);
   const [testing, setTesting] = useState(false);
@@ -82,37 +86,88 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
     <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto">
       <div>
         <h2 className="text-2xl sm:text-3xl font-black font-display text-white">
-          Platform Configuration & Settings
+          Platform Configuration & Capability Audit
         </h2>
         <p className="text-xs sm:text-sm text-gray-400 mt-1">
-          Centralize GenLayer network parameters, RPC endpoints, and contract addresses with strict truthfulness.
+          Centralize GenLayer network parameters, RPC endpoints, and runtime capabilities with strict truthfulness.
         </p>
       </div>
 
-      {/* Integration Status Badge Banner */}
-      <div className={`p-4 rounded-2xl border flex items-center gap-3 text-xs ${
-        isConfigured 
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
-          : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-      }`}>
-        {isConfigured ? (
-          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-        ) : (
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-        )}
-        <div>
-          <span className="font-bold uppercase tracking-wider text-[10px] block">
-            GENLAYER INTEGRATION STATUS: {isConfigured ? 'CONFIGURED' : 'CONFIGURATION-BLOCKED (NOT CONFIGURED)'}
-          </span>
-          {isConfigured ? (
-            <p className="text-[11px] text-emerald-200/80 mt-0.5">
-              Live Intelligent Contract address configured. Adjudication queries route to GenLayer network.
-            </p>
-          ) : (
-            <p className="text-[11px] text-amber-200/80 mt-0.5">
-              Intelligent Contract address is unconfigured (0x000...). To activate live on-chain consensus, deploy contracts/JinniAgentGuard.py on GenLayer Studio (https://studio.genlayer.com) and enter the address below.
-            </p>
-          )}
+      {/* Prominent Live Status Strip */}
+      {capability && <RuntimeCapabilityBar capability={capability} />}
+
+      {/* System Capability Breakdown Panel */}
+      <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4 text-xs">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-purple-400" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white font-display">
+              Runtime Capability Audit Status
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-gray-400">Strict Truthfulness Model</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">Agent Proposal Studio</span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">LIVE</span>
+            </div>
+            <p className="text-[11px] text-gray-400">Synthesizes actions and bundles verifiable market/oracle evidence.</p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">Policy Engine</span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">LIVE</span>
+            </div>
+            <p className="text-[11px] text-gray-400">Deterministic check for spend limits, max slippage, and allowed tokens.</p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">GenLayer Adjudication</span>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                isConfigured 
+                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
+                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+              }`}>
+                {isConfigured ? 'LIVE (STUDIONET)' : 'PREVIEW'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400">Submits to Intelligent Contract and polls decision on Studionet.</p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">Sepolia Wallet Execution</span>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                capability?.executionMode === "LIVE_WALLET" 
+                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
+                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+              }`}>
+                {capability?.executionMode === "LIVE_WALLET" ? 'LIVE WALLET' : 'PREVIEW / BLOCKED'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400">MetaMask execution requires human confirmation and verified receipt.</p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">Demo Reviewer Scenarios</span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/30">DEMO FIXTURES</span>
+            </div>
+            <p className="text-[11px] text-gray-400">Deterministic review fixtures clearly isolated from live spending.</p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/10">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-bold text-white">Consensus Telemetry</span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/10 text-gray-300 border border-white/15">REPORTED ONLY</span>
+            </div>
+            <p className="text-[11px] text-gray-400">Displays real returned telemetry only; never infers or fabricates counts.</p>
+          </div>
         </div>
       </div>
 

@@ -378,36 +378,54 @@ def test_ai_output_alone_cannot_authorize_execution():
 # -------------------------------------------------------------
 
 def test_demo_scenarios_have_correct_four_modes():
-    """Verify the 4 deterministic demo scenarios exist and are tagged as demo."""
+    """Verify the 4 canonical deterministic demo scenarios exist, are tagged as demo, and match required outcomes."""
+    from demo_scenarios import get_demo_scenarios, get_demo_scenario_by_id
     scenarios = get_demo_scenarios()
     assert len(scenarios) == 4
     for s in scenarios:
         assert s.isDemo is True
 
-    # Scenario 1: Safe Proposal
-    safe = scenarios[0]
+    # Check the exact 4 canonical IDs exist
+    ids = [s.id for s in scenarios]
+    assert "demo-safe-001" in ids
+    assert "demo-policy-violation-002" in ids
+    assert "demo-insufficient-evidence-003" in ids
+    assert "demo-genlayer-rejection-004" in ids
+
+    # 1. Safe Proposal
+    safe = get_demo_scenario_by_id("demo-safe-001")
+    assert safe is not None
     assert safe.policyResult == "PASS"
     assert safe.genlayer is not None
     assert safe.genlayer.decision == "APPROVE"
     assert safe.execution.status == "AWAITING_USER_CONFIRMATION"
+    assert safe.execution.txHash is None  # Never executed unless real receipt exists
 
-    # Scenario 2: Policy Violation
-    violation = scenarios[1]
+    # 2. Policy Violation
+    violation = get_demo_scenario_by_id("demo-policy-violation-002")
+    assert violation is not None
     assert violation.policyResult == "FAIL"
     assert violation.genlayer is None
     assert violation.execution.status == "BLOCKED"
 
-    # Scenario 3: Conflicting Oracle (Disputed)
-    disputed = scenarios[2]
-    assert disputed.genlayer is not None
-    assert disputed.genlayer.decision == "DISPUTE"
-    assert disputed.execution.status == "BLOCKED"
-
-    # Scenario 4: Insufficient Evidence (Insufficient Data)
-    insufficient = scenarios[3]
+    # 3. Insufficient Evidence
+    insufficient = get_demo_scenario_by_id("demo-insufficient-evidence-003")
+    assert insufficient is not None
     assert insufficient.genlayer is not None
     assert insufficient.genlayer.decision == "INSUFFICIENT_DATA"
     assert insufficient.execution.status == "BLOCKED"
+
+    # 4. GenLayer Rejection
+    rejection = get_demo_scenario_by_id("demo-genlayer-rejection-004")
+    assert rejection is not None
+    assert rejection.genlayer is not None
+    assert rejection.genlayer.decision == "REJECT"
+    assert rejection.execution.status == "BLOCKED"
+
+    # Also verify legacy aliases resolve smoothly
+    assert get_demo_scenario_by_id("demo-safe-approved-001") is not None
+    assert get_demo_scenario_by_id("demo-conflicting-oracle-003") is not None
+    assert get_demo_scenario_by_id("demo-insufficient-evidence-004") is not None
 
 # -------------------------------------------------------------
 # 5. DeFi Vault & AI Research Regression Tests
@@ -569,4 +587,28 @@ def test_wallet_analysis_agent_offline_safety():
     assert policy.get("max_spend_trade") <= 10.0
     assert policy.get("max_spend_week") <= 50.0
     assert "reasoning" in policy
+
+def test_load_demo_scenarios_endpoint_all_four():
+    """Verify all 4 canonical demo scenarios load through the API endpoint without 404."""
+    from main import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    for sc_id in [
+        "demo-safe-001",
+        "demo-policy-violation-002",
+        "demo-insufficient-evidence-003",
+        "demo-genlayer-rejection-004"
+    ]:
+        res = client.post(f"/api/agent/demo-scenarios/load?scenario_id={sc_id}")
+        assert res.status_code == 200, f"Failed for scenario {sc_id}"
+        data = res.json()
+        assert data["id"] == sc_id
+        assert data["isDemo"] is True
+        assert data["execution"]["txHash"] is None  # Never an executed receipt on demo load
+
+    # Invalid scenario returns 404
+    bad_res = client.post("/api/agent/demo-scenarios/load?scenario_id=demo-nonexistent-999")
+    assert bad_res.status_code == 404
+
 

@@ -47,7 +47,8 @@ class EvidenceItem(BaseModel):
         "CONTRACT_VERIFICATION",
         "SIMULATION",
         "PYTH_FEED",
-        "CHAINLINK_FEED"
+        "CHAINLINK_FEED",
+        "SLIPPAGE_ANALYSIS"
     ]
     value: Optional[Any] = None
     timestamp: Optional[str] = None

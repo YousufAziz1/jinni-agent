@@ -4,6 +4,7 @@ import type {
   PolicyRuleConfig,
   DecisionProof
 } from '../types/agent';
+import { getCanonicalDemoScenarios, getDemoScenarioById } from './demoScenarios';
 
 export interface BackendAgentStatus {
   configured: boolean;
@@ -166,16 +167,46 @@ export const agentApi = {
   },
 
   async getDemoScenarios(): Promise<AgentProposal[]> {
-    const res = await fetch(`${API_BASE}/agent/demo-scenarios`);
-    if (!res.ok) throw new Error("Failed to load demo scenarios");
-    return res.json();
+    try {
+      const res = await fetch(`${API_BASE}/agent/demo-scenarios`);
+      if (res.ok) {
+        const backendScenarios = await res.json();
+        if (Array.isArray(backendScenarios) && backendScenarios.length > 0) {
+          return backendScenarios;
+        }
+      }
+    } catch {
+      // Fallback to local deterministic registry
+    }
+    return getCanonicalDemoScenarios();
   },
 
   async loadDemoScenario(scenarioId: string): Promise<AgentProposal> {
-    const res = await fetch(`${API_BASE}/agent/demo-scenarios/load?scenario_id=${encodeURIComponent(scenarioId)}`, {
-      method: "POST"
-    });
-    if (!res.ok) throw new Error(`Failed to load scenario ${scenarioId}`);
-    return res.json();
+    const localFixture = getDemoScenarioById(scenarioId);
+    if (localFixture) {
+      // Fire-and-forget sync to backend so the database keeps in sync if backend is active
+      fetch(`${API_BASE}/agent/demo-scenarios/load?scenario_id=${encodeURIComponent(localFixture.id)}`, {
+        method: "POST"
+      }).catch(() => {
+        // Safe to ignore: reviewer demo stays functional offline or during cold boots
+      });
+      return localFixture;
+    }
+
+    // If not in local fixtures, attempt backend API
+    try {
+      const res = await fetch(`${API_BASE}/agent/demo-scenarios/load?scenario_id=${encodeURIComponent(scenarioId)}`, {
+        method: "POST"
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to load demo scenario ${scenarioId} (HTTP ${res.status}). Please verify scenario ID and retry.`);
+      }
+      return res.json();
+    } catch (err: any) {
+      throw new Error(
+        `Failed to load demo scenario ${scenarioId}: ${err?.message || 'Network error'}. Please check your connection and retry.`,
+        { cause: err }
+      );
+    }
   }
 };

@@ -5,15 +5,26 @@ import {
   ShieldCheck, 
   Sparkles, 
   CheckCircle, 
-  Zap
+  Zap,
+  AlertTriangle,
+  RefreshCw,
+  ExternalLink,
+  Shield,
+  Network
 } from 'lucide-react';
 import type { AgentProposal } from '../types/agent';
+import type { RuntimeCapability } from '../lib/runtimeCapability';
 import { TradeGuardPipeline } from '../components/TradeGuardPipeline';
 import { DemoScenariosBar } from '../components/DemoScenariosBar';
+import { RuntimeCapabilityBar } from '../components/RuntimeCapabilityBar';
+import { switchToSepolia } from '../lib/web3';
 
 interface AgentViewProps {
   proposals: AgentProposal[];
   activeProposal: AgentProposal | null;
+  capability: RuntimeCapability;
+  scenarioLoadingState?: "IDLE" | "LOADING_SCENARIO" | "LOADED" | "LOAD_ERROR";
+  scenarioError?: string | null;
   onSelectProposal: (proposal: AgentProposal) => void;
   onCreateProposal: (params: {
     actionType: string;
@@ -27,21 +38,26 @@ interface AgentViewProps {
   onSubmitToGenLayer: (proposalId: string) => Promise<void>;
   onConfirmExecution: (proposalId: string) => Promise<void>;
   onSelectScenario: (scenarioId: string) => void;
+  onRetryScenario?: () => void;
+  onConnectWallet?: () => void;
   loading: boolean;
   submitting: boolean;
   confirming: boolean;
-  walletConnected?: boolean;
-  address?: string;
 }
 
 export const AgentView: React.FC<AgentViewProps> = ({
   proposals,
   activeProposal,
+  capability,
+  scenarioLoadingState = "IDLE",
+  scenarioError = null,
   onSelectProposal,
   onCreateProposal,
   onSubmitToGenLayer,
   onConfirmExecution,
   onSelectScenario,
+  onRetryScenario,
+  onConnectWallet,
   loading,
   submitting,
   confirming
@@ -61,7 +77,6 @@ export const AgentView: React.FC<AgentViewProps> = ({
   const [agentActive, setAgentActive] = useState<boolean>(true);
   const [guardEnabled, setGuardEnabled] = useState<boolean>(true);
   const [humanConfirmRequired, setHumanConfirmRequired] = useState<boolean>(true);
-  const [simulationMode, setSimulationMode] = useState<boolean>(false);
 
   const handleAssetChange = (newAsset: string) => {
     setAsset(newAsset);
@@ -97,9 +112,37 @@ export const AgentView: React.FC<AgentViewProps> = ({
     });
   };
 
+  const isDemo = activeProposal?.isDemo ?? false;
+  const isSepolia = capability.walletConnected && capability.walletChainId === capability.expectedChainId;
+
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn">
       
+      {/* Live Capability Strip */}
+      <RuntimeCapabilityBar 
+        capability={capability} 
+        onConnectWallet={onConnectWallet} 
+      />
+
+      {/* Scenario Error Notification with Retry */}
+      {scenarioLoadingState === "LOAD_ERROR" && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between gap-4 text-xs text-rose-200">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            <span>{scenarioError || "Failed to load demo scenario."}</span>
+          </div>
+          {onRetryScenario && (
+            <button
+              onClick={onRetryScenario}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold text-white transition-all shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Load</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Title & Agent Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -140,19 +183,27 @@ export const AgentView: React.FC<AgentViewProps> = ({
             Human Confirm: {humanConfirmRequired ? 'REQUIRED' : 'AUTO'}
           </button>
 
-          <button
-            onClick={() => setSimulationMode(!simulationMode)}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
-              simulationMode ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 bg-white/5'
+          {/* Truthful Runtime Mode Pill */}
+          <div 
+            className={`px-3 py-1.5 rounded-xl font-bold border ${
+              capability.executionMode === "LIVE_WALLET"
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : capability.executionMode === "UNAVAILABLE"
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                : 'bg-white/10 text-gray-300 border-white/10'
             }`}
+            title="Runtime execution capability strictly conditional on verified wallet and network"
           >
-            Mode: {simulationMode ? 'SIMULATION' : 'LIVE WALLET'}
-          </button>
+            Mode: {capability.statusLabel}
+          </div>
         </div>
       </div>
 
       {/* Demo Scenarios Bar */}
-      <DemoScenariosBar onSelectScenario={onSelectScenario} />
+      <DemoScenariosBar 
+        onSelectScenario={onSelectScenario} 
+        loading={scenarioLoadingState === "LOADING_SCENARIO"} 
+      />
 
       {/* Main Studio Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -278,6 +329,7 @@ export const AgentView: React.FC<AgentViewProps> = ({
         <div className="lg:col-span-7 space-y-6">
           {activeProposal ? (
             <div className="space-y-6">
+              
               {/* Pipeline Tracker */}
               <TradeGuardPipeline proposal={activeProposal} />
 
@@ -287,15 +339,22 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   <h4 className="font-bold text-white uppercase text-xs tracking-wider">
                     Execution Gate & Adjudication Controls
                   </h4>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                    activeProposal.state === 'READY_FOR_EXECUTION' || activeProposal.state === 'EXECUTED'
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : activeProposal.state === 'AWAITING_CONFIRMATION'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                      : 'bg-white/5 border-white/10 text-gray-400'
-                  }`}>
-                    {activeProposal.state}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {isDemo && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                        DEMO FIXTURE
+                      </span>
+                    )}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                      activeProposal.state === 'READY_FOR_EXECUTION' || activeProposal.state === 'EXECUTED'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        : activeProposal.state === 'AWAITING_CONFIRMATION'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                        : 'bg-white/5 border-white/10 text-gray-400'
+                    }`}>
+                      {activeProposal.state}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Submitting to GenLayer Button */}
@@ -321,21 +380,59 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
                     <div className="flex items-start gap-2 text-emerald-200">
                       <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <p>
-                        GenLayer independent adjudication concluded with <strong>APPROVE</strong>. 
-                        Your policy requires explicit human confirmation before executing the swap on Sepolia.
-                      </p>
+                      <div>
+                        <p>
+                          Adjudication concluded with <strong>APPROVE</strong>. 
+                          {isDemo ? (
+                            <span className="block mt-0.5 text-amber-300">
+                              (Demo fixture: clicking below simulates reviewer confirmation without sending a live Sepolia transaction).
+                            </span>
+                          ) : (
+                            <span className="block mt-0.5">
+                              Policy requires explicit human confirmation before executing on Sepolia.
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
 
-                    <button
-                      id="execute-trade-btn"
-                      disabled={confirming}
-                      onClick={() => onConfirmExecution(activeProposal.id)}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white font-bold transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
-                    >
-                      <Zap className="w-4 h-4" />
-                      <span>{confirming ? "Confirming on MetaMask & Sepolia..." : "CONFIRM EXECUTION ON SEPOLIA"}</span>
-                    </button>
+                    {isDemo ? (
+                      <button
+                        id="execute-trade-btn"
+                        disabled={confirming}
+                        onClick={() => onConfirmExecution(activeProposal.id)}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:opacity-95 text-white font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>{confirming ? "Simulating..." : "SIMULATE DEMO CONFIRMATION (PREVIEW)"}</span>
+                      </button>
+                    ) : !capability.walletConnected ? (
+                      <button
+                        onClick={onConnectWallet}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-purple-600 text-white font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>CONNECT WALLET TO EXECUTE ON SEPOLIA</span>
+                      </button>
+                    ) : !isSepolia ? (
+                      <button
+                        onClick={switchToSepolia}
+                        className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <Network className="w-4 h-4" />
+                        <span>SWITCH METAMASK TO SEPOLIA TO EXECUTE</span>
+                      </button>
+                    ) : (
+                      <button
+                        id="execute-trade-btn"
+                        disabled={confirming}
+                        onClick={() => onConfirmExecution(activeProposal.id)}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-white font-bold transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>{confirming ? "Signing via MetaMask..." : "CONFIRM EXECUTION ON SEPOLIA"}</span>
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -346,6 +443,7 @@ export const AgentView: React.FC<AgentViewProps> = ({
                     <p>
                       {activeProposal.policyFailureReason || 
                        activeProposal.genlayer?.reasoning || 
+                       activeProposal.execution.error || 
                        "Execution gate blocked transaction due to safety or consensus rejection."}
                     </p>
                   </div>
@@ -356,12 +454,20 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   <div className="p-4 rounded-2xl bg-teal-500/10 border border-teal-500/30 text-teal-200 space-y-2">
                     <div className="flex items-center gap-2 font-bold text-teal-300">
                       <CheckCircle className="w-4 h-4 text-teal-400" />
-                      <span>Transaction Executed & Settled</span>
+                      <span>
+                        {isDemo ? "Demo Fixture Simulation Recorded" : "Transaction Executed & Settled on Sepolia"}
+                      </span>
                     </div>
-                    {activeProposal.execution.txHash && (
-                      <p className="font-mono text-[11px] truncate text-gray-300">
-                        Sepolia Tx: {activeProposal.execution.txHash}
-                      </p>
+                    {activeProposal.execution.txHash && !isDemo && (
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${activeProposal.execution.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[11px] truncate text-purple-300 hover:underline flex items-center gap-1"
+                      >
+                        <span>Sepolia Tx: {activeProposal.execution.txHash}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
                     )}
                   </div>
                 )}
@@ -371,9 +477,23 @@ export const AgentView: React.FC<AgentViewProps> = ({
             <div className="p-12 rounded-3xl bg-black/40 border border-white/10 text-center flex flex-col items-center justify-center min-h-[350px]">
               <Brain className="w-12 h-12 text-gray-600 mb-4" />
               <h4 className="text-base font-bold text-white font-display mb-1">No Active Proposal Selected</h4>
-              <p className="text-xs text-gray-400 max-w-sm">
+              <p className="text-xs text-gray-400 max-w-sm mb-4">
                 Use the proposal synthesizer on the left, or select one of the 4 demo scenarios above to begin.
               </p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={() => onSelectScenario('demo-safe-001')}
+                  className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-emerald-300 border border-emerald-500/30"
+                >
+                  Load 1. Safe Proposal
+                </button>
+                <button
+                  onClick={() => onSelectScenario('demo-policy-violation-002')}
+                  className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-amber-300 border border-amber-500/30"
+                >
+                  Load 2. Policy Violation
+                </button>
+              </div>
             </div>
           )}
 
@@ -396,6 +516,11 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-bold text-white">{p.actionType} {p.asset}</span>
                     <span className="text-[11px] text-gray-400 font-mono">${p.amountUsd}</span>
+                    {p.isDemo && (
+                      <span className="text-[9px] font-semibold text-amber-400/80 px-1.5 py-0.2 rounded bg-amber-500/10">
+                        Demo
+                      </span>
+                    )}
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                     p.execution.status === 'EXECUTED'

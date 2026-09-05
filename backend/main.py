@@ -667,10 +667,10 @@ def get_demo_fixtures():
 @app.post("/api/agent/demo-scenarios/load")
 def load_demo_scenario(scenario_id: str = Query(...), db: Session = Depends(get_db)):
     """Loads a specific demo scenario into the active proposal state."""
-    scenarios = get_demo_scenarios()
-    target = next((s for s in scenarios if s.id == scenario_id), None)
+    from demo_scenarios import get_demo_scenario_by_id
+    target = get_demo_scenario_by_id(scenario_id)
     if not target:
-        raise HTTPException(status_code=404, detail="Scenario not found")
+        raise HTTPException(status_code=404, detail=f"Scenario {scenario_id} not found")
 
     existing = db.query(ProposalModel).filter(ProposalModel.id == target.id).first()
     if existing:

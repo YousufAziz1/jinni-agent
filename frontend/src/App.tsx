@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 
 import { 
   connectWallet, 
+  getWalletChainId,
   getBalances, 
   executeSwapTrade, 
   getPublicClient,
@@ -10,7 +11,13 @@ import {
 } from './lib/web3';
 import { api } from './lib/api';
 import { agentApi, type ActivityLogItem } from './lib/agentApi';
-import { isGenLayerConfigured } from './lib/genlayer';
+import { isGenLayerConfigured, getStoredGenLayerConfig } from './lib/genlayer';
+import { 
+  getCanonicalDemoScenarios, 
+  getCanonicalDemoProofs,
+  createDecisionProofFromProposal 
+} from './lib/demoScenarios';
+import { getRuntimeCapability, type RuntimeCapability } from './lib/runtimeCapability';
 import type { 
   AgentProposal, 
   DecisionProof, 
@@ -37,6 +44,7 @@ export default function App() {
 
   // Authentication & Web3 State
   const [address, setAddress] = useState<string>('');
+  const [walletChainId, setWalletChainId] = useState<number | null>(null);
   const [balances, setBalances] = useState<Record<string, { wallet: string; vault: string }>>({});
   const [walletConnected, setWalletConnected] = useState<boolean>(false);
   const [sepoliaConnected, setSepoliaConnected] = useState<boolean>(false);
@@ -45,11 +53,11 @@ export default function App() {
   const [genlayerConfigured, setGenlayerConfigured] = useState<boolean>(() => isGenLayerConfigured());
   const [, setBackendStatus] = useState<BackendStatus | null>(null);
 
-  // Core Data
-  const [proposals, setProposals] = useState<AgentProposal[]>([]);
-  const [activeProposal, setActiveProposal] = useState<AgentProposal | null>(null);
+  // Core Data (Initialize with canonical fixtures so demo is instantly reviewable)
+  const [proposals, setProposals] = useState<AgentProposal[]>(() => getCanonicalDemoScenarios());
+  const [activeProposal, setActiveProposal] = useState<AgentProposal | null>(() => getCanonicalDemoScenarios()[0]);
   const [inspectModalProposal, setInspectModalProposal] = useState<AgentProposal | null>(null);
-  const [proofs, setProofs] = useState<DecisionProof[]>([]);
+  const [proofs, setProofs] = useState<DecisionProof[]>(() => getCanonicalDemoProofs());
   const [policies, setPolicies] = useState<PolicyRuleConfig | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -62,13 +70,67 @@ export default function App() {
   const [savingPolicy, setSavingPolicy] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  const [mockInitialized, setMockInitialized] = useState<boolean>(() => areMockTokensInitialized());
+  // Scenario loading state machine: IDLE | LOADING_SCENARIO | LOADED | LOAD_ERROR
+  const [scenarioLoadingState, setScenarioLoadingState] = useState<"IDLE" | "LOADING_SCENARIO" | "LOADED" | "LOAD_ERROR">("IDLE");
+  const [scenarioError, setScenarioError] = useState<string | null>(null);
+  const [lastScenarioId, setLastScenarioId] = useState<string | null>(null);
 
+  const [mockInitialized, setMockInitialized] = useState<boolean>(() => areMockTokensInitialized());
   const pollingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message: msg, type });
     setTimeout(() => setToast(null), 5000);
+  }, []);
+
+  // Compute single source of truth for runtime capability
+  const capability: RuntimeCapability = getRuntimeCapability({
+    walletConnected,
+    walletAddress: address,
+    walletChainId,
+    genlayerConfigured,
+    genlayerContractAddress: getStoredGenLayerConfig().contractAddress,
+    executionAdapterConfigured: true
+  });
+
+  // Track wallet chain and account changes live
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      // Initial check if already connected
+      getWalletChainId().then(cid => {
+        if (cid) setWalletChainId(cid);
+      }).catch(() => {});
+
+      const handleChainChanged = (chainIdHex: string) => {
+        const cid = parseInt(chainIdHex, 16);
+        setWalletChainId(cid);
+        setSepoliaConnected(cid === 11155111);
+      };
+
+      const handleAccountsChanged = (accs: string[]) => {
+        if (!accs || accs.length === 0) {
+          setWalletConnected(false);
+          setAddress('');
+          setWalletChainId(null);
+          setSepoliaConnected(false);
+        } else {
+          setAddress(accs[0]);
+          setWalletConnected(true);
+          getWalletChainId().then(cid => {
+            setWalletChainId(cid);
+            setSepoliaConnected(cid === 11155111);
+          }).catch(() => {});
+        }
+      };
+
+      window.ethereum.on?.('chainChanged', handleChainChanged);
+      window.ethereum.on?.('accountsChanged', handleAccountsChanged);
+
+      return () => {
+        window.ethereum.removeListener?.('chainChanged', handleChainChanged);
+        window.ethereum.removeListener?.('accountsChanged', handleAccountsChanged);
+      };
+    }
   }, []);
 
   // Refresh all core application state
@@ -78,7 +140,7 @@ export default function App() {
       try {
         const st = await api.getStatus();
         setBackendStatus(st);
-        setSepoliaConnected(st.sepolia_connected);
+        if (st.sepolia_connected) setSepoliaConnected(true);
       } catch {}
 
       // 2. GenLayer Status
@@ -98,16 +160,25 @@ export default function App() {
       // 4. Proposals
       try {
         const props = await agentApi.listProposals(undefined, true);
-        setProposals(props);
-        if (!activeProposal && props.length > 0) {
-          setActiveProposal(props[0]);
+        if (props && props.length > 0) {
+          // Merge with canonical fixtures so demo scenarios remain permanently selectable
+          const canonical = getCanonicalDemoScenarios();
+          const merged = [...props];
+          for (const c of canonical) {
+            if (!merged.some(p => p.id === c.id)) {
+              merged.push(c);
+            }
+          }
+          setProposals(merged);
         }
       } catch {}
 
       // 5. Decision Proofs
       try {
         const prfs = await agentApi.listDecisionProofs();
-        setProofs(prfs);
+        if (prfs && prfs.length > 0) {
+          setProofs(prfs);
+        }
       } catch {}
 
       // 6. Activity Logs
@@ -138,13 +209,12 @@ export default function App() {
     } catch (err) {
       console.error("Failed to refresh app data:", err);
     }
-  }, [address, activeProposal]);
+  }, [address]);
 
   // Initial load & Polling loop
   useEffect(() => {
     refreshAppData();
 
-    // Canonical Polling: poll status and proposals every 8 seconds
     pollingTimerRef.current = setInterval(() => {
       refreshAppData();
     }, 8000);
@@ -159,9 +229,11 @@ export default function App() {
   // Handle Wallet Connection
   const handleConnectWallet = async () => {
     try {
-      const userAddr = await connectWallet();
+      const { address: userAddr, chainId } = await connectWallet();
       setAddress(userAddr);
       setWalletConnected(true);
+      setWalletChainId(chainId);
+      setSepoliaConnected(chainId === 11155111);
       showToast(`Connected: ${userAddr.substring(0, 6)}...${userAddr.substring(userAddr.length - 4)}`, 'success');
       await refreshAppData();
     } catch (e: any) {
@@ -183,6 +255,7 @@ export default function App() {
     try {
       const newProp = await agentApi.createProposal(params);
       setActiveProposal(newProp);
+      setProposals(prev => [newProp, ...prev.filter(p => p.id !== newProp.id)]);
       showToast(`Proposal ${newProp.id} created! Policy: ${newProp.policyResult}`, 'success');
       await refreshAppData();
     } catch (e: any) {
@@ -198,6 +271,7 @@ export default function App() {
     try {
       const updated = await agentApi.submitToGenLayer(proposalId);
       setActiveProposal(updated);
+      setProposals(prev => prev.map(p => p.id === updated.id ? updated : p));
       showToast(`Submitted to GenLayer! Decision: ${updated.genlayer?.decision}`, 'success');
       await refreshAppData();
     } catch (e: any) {
@@ -207,45 +281,77 @@ export default function App() {
     }
   };
 
-  // Confirm Execution on Sepolia
+  // Confirm Execution
   const handleConfirmExecution = async (proposalId: string) => {
     setConfirming(true);
     try {
       const target = proposals.find(p => p.id === proposalId) || activeProposal;
-      let txHash: string | null = null;
+      if (!target) throw new Error("Proposal not found");
 
-      // If connected to wallet, execute the actual trade swap on Sepolia (unless it is a demo fixture)
-      if (walletConnected && address && target?.asset && !target.isDemo) {
-        showToast("Initiating swap transaction on MetaMask...", "info");
-        try {
-          const tradeAmt = parseFloat(target.amount || "1.0");
-          txHash = await executeSwapTrade(address, "USDC", target.asset, tradeAmt, 1.0);
-          showToast(`Transaction submitted on Sepolia! Tx: ${txHash.slice(0, 10)}...`, "info");
-          const publicClient = getPublicClient();
-          await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
-        } catch (walletErr: any) {
-          console.warn("Wallet execution aborted or reverted:", walletErr);
-          throw new Error(`Wallet execution failed: ${walletErr.message || 'Signature rejected'}`, { cause: walletErr });
+      // Handle Demo Fixture Execution (Deterministic preview simulation only)
+      if (target.isDemo) {
+        // Update local proposal preview state
+        const updated: AgentProposal = {
+          ...target,
+          state: "EXECUTED",
+          execution: {
+            ...target.execution,
+            status: "EXECUTED",
+            userConfirmed: true,
+            executedAt: new Date().toISOString(),
+            txHash: null // Never fabricate a blockchain transaction receipt for fixtures
+          }
+        };
+
+        setActiveProposal(updated);
+        setProposals(prev => prev.map(p => p.id === updated.id ? updated : p));
+        if (inspectModalProposal?.id === proposalId) {
+          setInspectModalProposal(updated);
         }
-      } else {
-        // Preview or demo fixture mode execution
-        txHash = target?.isDemo ? `0xd3m0_demo_execution_${Date.now()}` : `0xsim_${Date.now()}`;
+
+        // Add or update corresponding proof
+        const proof = createDecisionProofFromProposal(updated);
+        setProofs(prev => [proof, ...prev.filter(pr => pr.proposalId !== proof.proposalId)]);
+
+        showToast("Demo simulation completed! (Not an on-chain Sepolia transaction)", "info");
+        confetti({ particleCount: 100, spread: 60, colors: ['#a855f7', '#3b82f6'] });
+        return;
       }
+
+      // Live On-Chain Execution Path
+      if (!walletConnected || !address) {
+        showToast("Wallet not connected. Connect MetaMask to execute on Sepolia.", "error");
+        return;
+      }
+
+      if (walletChainId !== 11155111) {
+        showToast("Wrong network. Please switch MetaMask to Sepolia (11155111) to execute.", "error");
+        return;
+      }
+
+      showToast("Initiating swap transaction on MetaMask...", "info");
+      const tradeAmt = parseFloat(target.amount || "1.0");
+      const txHash = await executeSwapTrade(address, "USDC", target.asset || "LINK", tradeAmt, 1.0);
+      showToast(`Transaction submitted on Sepolia! Tx: ${txHash.slice(0, 10)}...`, "info");
+
+      const publicClient = getPublicClient();
+      await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
 
       const res = await agentApi.executeProposal({
         proposalId,
         userConfirmed: true,
         txHash,
-        mode: walletConnected ? 'WALLET' : 'SIMULATION'
+        mode: 'WALLET'
       });
 
       setActiveProposal(res.proposal);
+      setProposals(prev => prev.map(p => p.id === res.proposal.id ? res.proposal : p));
       if (inspectModalProposal?.id === proposalId) {
         setInspectModalProposal(res.proposal);
       }
 
-      showToast(`Execution confirmed! Decision Proof recorded.`, 'success');
-      confetti({ particleCount: 150, spread: 80, colors: ['#6c63ff', '#00ff66'] });
+      showToast(`Execution confirmed on Sepolia! Tx verified.`, 'success');
+      confetti({ particleCount: 150, spread: 80, colors: ['#10b981', '#06b6d4'] });
       await refreshAppData();
     } catch (e: any) {
       showToast(e.message || 'Execution confirmation failed', 'error');
@@ -268,16 +374,44 @@ export default function App() {
     }
   };
 
-  // Load Demo Scenario
+  // Reviewer Demo Scenario Loader (P0 - Never fails on reviewers)
   const handleSelectScenario = async (scenarioId: string) => {
+    setScenarioLoadingState("LOADING_SCENARIO");
+    setScenarioError(null);
+    setLastScenarioId(scenarioId);
+
     try {
       const loaded = await agentApi.loadDemoScenario(scenarioId);
       setActiveProposal(loaded);
+
+      // Ensure loaded proposal exists in proposals list
+      setProposals((prev) => {
+        const exists = prev.some(p => p.id === loaded.id);
+        if (exists) return prev.map(p => p.id === loaded.id ? loaded : p);
+        return [loaded, ...prev];
+      });
+
+      // Ensure corresponding decision proof is present
+      const demoProof = createDecisionProofFromProposal(loaded);
+      setProofs((prev) => {
+        const exists = prev.some(prf => prf.proposalId === demoProof.proposalId);
+        if (exists) return prev.map(prf => prf.proposalId === demoProof.proposalId ? demoProof : prf);
+        return [demoProof, ...prev];
+      });
+
+      setScenarioLoadingState("LOADED");
       setActiveTab('agent');
       showToast(`Demo Scenario "${loaded.actionType} ${loaded.asset}" loaded!`, 'info');
-      await refreshAppData();
     } catch (e: any) {
+      setScenarioLoadingState("LOAD_ERROR");
+      setScenarioError(e.message || `Failed to load scenario ${scenarioId}`);
       showToast(e.message || 'Failed to load demo scenario', 'error');
+    }
+  };
+
+  const handleRetryScenario = () => {
+    if (lastScenarioId) {
+      handleSelectScenario(lastScenarioId);
     }
   };
 
@@ -297,22 +431,24 @@ export default function App() {
         onConnectWallet={handleConnectWallet}
         genlayerConfigured={genlayerConfigured}
         sepoliaConnected={sepoliaConnected}
+        walletChainId={walletChainId}
       />
 
       {/* Main App Body */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         
         {activeTab === 'overview' && (
           <OverviewView
             proposals={proposals}
             proofs={proofs}
+            capability={capability}
             onSelectProposal={(p) => {
               setActiveProposal(p);
               setInspectModalProposal(p);
             }}
             onNavigateTab={setActiveTab}
             onSelectScenario={handleSelectScenario}
-            genlayerConfigured={genlayerConfigured}
+            onConnectWallet={handleConnectWallet}
           />
         )}
 
@@ -320,16 +456,19 @@ export default function App() {
           <AgentView
             proposals={proposals}
             activeProposal={activeProposal}
+            capability={capability}
+            scenarioLoadingState={scenarioLoadingState}
+            scenarioError={scenarioError}
             onSelectProposal={(p) => setActiveProposal(p)}
             onCreateProposal={handleCreateProposal}
             onSubmitToGenLayer={handleSubmitToGenLayer}
             onConfirmExecution={handleConfirmExecution}
             onSelectScenario={handleSelectScenario}
+            onRetryScenario={handleRetryScenario}
+            onConnectWallet={handleConnectWallet}
             loading={loading}
             submitting={submitting}
             confirming={confirming}
-            walletConnected={walletConnected}
-            address={address}
           />
         )}
 
@@ -359,6 +498,8 @@ export default function App() {
           <DecisionProofsView
             proofs={proofs}
             loading={loading}
+            onSelectScenario={handleSelectScenario}
+            onNavigateTab={setActiveTab}
           />
         )}
 
@@ -379,6 +520,7 @@ export default function App() {
           <SettingsView
             onRefreshStatus={refreshAppData}
             showToast={showToast}
+            capability={capability}
           />
         )}
 

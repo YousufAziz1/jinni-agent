@@ -4,7 +4,8 @@ import {
   Shield, 
   CheckCircle, 
   Cpu, 
-  Clock
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import type { AgentProposal } from '../types/agent';
 import { getDecisionBadgeProps, formatTelemetryField } from '../lib/genlayer';
@@ -24,11 +25,16 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
 }) => {
   if (!proposal) return null;
 
+  const isLiveTx = !proposal.isDemo && Boolean(proposal.genlayer?.txHash && !proposal.genlayer.txHash.startsWith("0xd3m0"));
   const decisionBadge = proposal.genlayer?.decision 
-    ? getDecisionBadgeProps(proposal.genlayer.decision)
+    ? getDecisionBadgeProps(proposal.genlayer.decision, proposal.isDemo, isLiveTx)
     : null;
 
   const telemetry = proposal.genlayer?.telemetry;
+  const hasRealTelemetry = Boolean(
+    telemetry && 
+    (telemetry.validatorCount != null || telemetry.consensusPercentage != null)
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
@@ -43,9 +49,13 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-white font-display">Proposal Details</h3>
-                {proposal.isDemo && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    DEMO FIXTURE
+                {proposal.isDemo ? (
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    DEMO FIXTURE — NOT A LIVE TRANSACTION
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    LIVE PROPOSAL
                   </span>
                 )}
               </div>
@@ -60,6 +70,19 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Demo Warning Banner if Demo */}
+        {proposal.isDemo && (
+          <div className="mb-6 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-amber-300 text-xs">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+            <div>
+              <span className="font-bold uppercase tracking-wider text-[10px] block text-amber-400">
+                DEMO FIXTURE — NOT A LIVE TRANSACTION
+              </span>
+              This proposal is a deterministic reviewer fixture. Results are isolated from on-chain transactions and consensus telemetry is not fabricated.
+            </div>
+          </div>
+        )}
 
         {/* Transaction Summary Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 mb-6">
@@ -122,14 +145,16 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
 
         {/* GenLayer Adjudication & Telemetry */}
         <div className="mb-6">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">GenLayer Independent Adjudication</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+            GenLayer Independent Adjudication
+          </h4>
           <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
             {proposal.genlayer ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Cpu className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-semibold text-white">Consensus Decision</span>
+                    <span className="text-xs font-semibold text-white">Adjudication Decision</span>
                   </div>
                   {decisionBadge && (
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${decisionBadge.bgClass} ${decisionBadge.textClass} ${decisionBadge.borderClass}`}>
@@ -142,37 +167,56 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
                   {proposal.genlayer.reasoning || "No reasoning returned by GenLayer contract."}
                 </p>
 
-                {/* Telemetry Data Grid: Strictly displays only real fields */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-white/10 text-xs">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase">Validators</span>
-                    <p className="font-semibold text-gray-300 mt-0.5">
-                      {formatTelemetryField(telemetry?.validatorCount)}
-                    </p>
+                {/* Telemetry Status: strictly display only real fields if returned */}
+                <div className="pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] uppercase font-bold text-gray-400">
+                      Consensus Telemetry Status
+                    </span>
+                    <span className="text-[10px] text-gray-500">
+                      {hasRealTelemetry ? "Reported by node" : "TELEMETRY NOT RETURNED"}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase">Consensus %</span>
-                    <p className="font-semibold text-gray-300 mt-0.5">
-                      {formatTelemetryField(telemetry?.consensusPercentage, '%')}
+
+                  {hasRealTelemetry ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase">Validators</span>
+                        <p className="font-semibold text-gray-300 mt-0.5">
+                          {formatTelemetryField(telemetry?.validatorCount)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase">Consensus %</span>
+                        <p className="font-semibold text-gray-300 mt-0.5">
+                          {formatTelemetryField(telemetry?.consensusPercentage, '%')}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase">Confidence</span>
+                        <p className="font-semibold text-gray-300 mt-0.5">
+                          {formatTelemetryField(telemetry?.confidence)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase">Rounds</span>
+                        <p className="font-semibold text-gray-300 mt-0.5">
+                          {formatTelemetryField(telemetry?.rounds)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 italic">
+                      Telemetry not returned by the current contract response. No simulated validator counts are fabricated.
                     </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase">Confidence</span>
-                    <p className="font-semibold text-gray-300 mt-0.5">
-                      {formatTelemetryField(telemetry?.confidence)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase">Rounds</span>
-                    <p className="font-semibold text-gray-300 mt-0.5">
-                      {formatTelemetryField(telemetry?.rounds)}
-                    </p>
-                  </div>
+                  )}
                 </div>
 
                 {proposal.genlayer.txHash && (
                   <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
-                    <span className="font-mono text-[11px] truncate">Tx: {proposal.genlayer.txHash}</span>
+                    <span className="font-mono text-[11px] truncate">
+                      Tx: {proposal.genlayer.txHash} {proposal.isDemo && "(Demo Fixture)"}
+                    </span>
                     <span className="text-purple-400 font-semibold">{proposal.genlayer.txStatus || 'Pending'}</span>
                   </div>
                 )}
@@ -203,7 +247,13 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
             >
               <CheckCircle className="w-4 h-4" />
-              <span>{confirming ? "Submitting to Sepolia..." : "CONFIRM EXECUTION"}</span>
+              <span>
+                {confirming
+                  ? "Processing..."
+                  : proposal.isDemo
+                  ? "CONFIRM DEMO EXECUTION (PREVIEW)"
+                  : "CONFIRM EXECUTION ON SEPOLIA"}
+              </span>
             </button>
           )}
         </div>
