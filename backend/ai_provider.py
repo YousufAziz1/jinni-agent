@@ -27,10 +27,10 @@ class AIProviderAdapter:
         ollama_model: Optional[str] = None
     ):
         from config import settings
-        self.provider = provider or getattr(settings, "AI_PROVIDER", "groq")
+        self.provider = provider or getattr(settings, "AI_PROVIDER", "gemini")
         self.api_key = api_key if api_key is not None else getattr(settings, "AI_API_KEY", "")
-        self.model = model or getattr(settings, "AI_MODEL", "llama-3.3-70b-versatile")
-        self.base_url = base_url or getattr(settings, "AI_BASE_URL", "https://api.groq.com/openai/v1")
+        self.model = model or getattr(settings, "AI_MODEL", "gemini-3.8-flash")
+        self.base_url = base_url or getattr(settings, "AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
         self.ollama_url = ollama_url or getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434/v1")
         self.ollama_model = ollama_model or getattr(settings, "OLLAMA_MODEL", "llama3.2")
 

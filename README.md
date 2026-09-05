@@ -302,12 +302,12 @@ USDC_ADDRESS=0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
 LINK_ADDRESS=0x779877A7B0D9E8603169DdbD7836e478b4624789
 UNI_ADDRESS=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984
 
-# Off-Chain AI Provider (Free Cloud Tier: Groq / Gemini, or Local Ollama)
+# Off-Chain AI Provider (Free Cloud Tier: Google Gemini 3.8 Flash, Groq, or Local Ollama)
 # Note: Off-chain AI strictly proposes actions. GenLayer independently adjudicates.
-AI_PROVIDER=groq
-AI_API_KEY=your_free_groq_or_gemini_api_key_here
-AI_MODEL=llama-3.3-70b-versatile
-AI_BASE_URL=https://api.groq.com/openai/v1
+AI_PROVIDER=gemini
+AI_API_KEY=your_free_gemini_api_key_here
+AI_MODEL=gemini-3.8-flash
+AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=llama3.2
 

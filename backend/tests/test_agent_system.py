@@ -463,6 +463,21 @@ def test_ai_provider_configuration():
     assert health["status"] == "CONNECTED"
     assert health["apiKeyConfigured"] is True
 
+def test_ai_provider_gemini_3_8_flash_configuration():
+    """Verify Gemini 3.8 Flash configuration is accepted."""
+    from ai_provider import AIProviderAdapter
+    adapter = AIProviderAdapter(
+        provider="gemini",
+        api_key="test_gemini_key",
+        model="gemini-3.8-flash",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    )
+    health = adapter.health_check()
+    assert health["provider"] == "gemini"
+    assert health["model"] == "gemini-3.8-flash"
+    assert health["status"] == "CONNECTED"
+    assert health["apiKeyConfigured"] is True
+
 def test_ai_provider_unconfigured_returns_ai_unavailable():
     """When no API key is provided and Ollama is unreachable, status must be AI_UNAVAILABLE."""
     from ai_provider import AIProviderAdapter

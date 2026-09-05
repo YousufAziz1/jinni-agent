@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    # Off-Chain AI Provider Configuration (Free tier: Groq, Gemini via OpenAI-compat, or local Ollama)
-    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq")
-    AI_API_KEY: str = os.getenv("AI_API_KEY", "")
-    AI_MODEL: str = os.getenv("AI_MODEL", "llama-3.3-70b-versatile")
-    AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1")
+    # Off-Chain AI Provider Configuration (Default: Google Gemini 3.8 Flash via OpenAI-compat, or local Ollama)
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "gemini")
+    AI_API_KEY: str = os.getenv("AI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
+    AI_MODEL: str = os.getenv("AI_MODEL", "gemini-3.8-flash")
+    AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.2")
 
