@@ -136,7 +136,7 @@ class DecisionProof(BaseModel):
 class PolicyRuleConfig(BaseModel):
     id: str = "default-policy"
     version: str = "1.0.0"
-    name: str = "Standard JINNI Safety Guard"
+    name: str = "Standard JINNI Agent Safety Guard"
     maxTransactionValue: float = 500.0
     maxDailySpend: float = 1000.0
     maxSlippage: float = 1.0

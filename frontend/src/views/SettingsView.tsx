@@ -185,7 +185,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
             <div className="flex items-center gap-2 mb-4">
               <Database className="w-5 h-5 text-[var(--accent)]" />
               <h3 className="text-sm font-bold uppercase tracking-wider text-white font-display">
-                JINNI Backend API URL
+                JINNI Agent Backend API URL
               </h3>
             </div>
 

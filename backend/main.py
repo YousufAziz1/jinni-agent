@@ -222,7 +222,7 @@ def get_policies(db: Session = Depends(get_db)):
         default_p = PolicyModel(
             id="default-policy",
             version="1.0.0",
-            name="Standard JINNI Safety Guard",
+            name="Standard JINNI Agent Safety Guard",
             max_transaction_value=500.0,
             max_daily_spend=1000.0,
             max_slippage=1.0,
@@ -631,7 +631,7 @@ def load_demo_scenario(scenario_id: str = Query(...), db: Session = Depends(get_
 
 
 # =============================================================
-# Original JINNI Endpoints (Preserved 100% for Backward Compatibility)
+# DeFi Vault Endpoints (Sepolia Escrow & AI Research)
 # =============================================================
 
 class WalletAnalysisRequest(BaseModel):

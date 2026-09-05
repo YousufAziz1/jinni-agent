@@ -76,7 +76,7 @@ def call_venice_ai(prompt: str, system_prompt: str) -> str:
                 "max_spend_trade": 10.0,
                 "max_spend_week": 50.0,
                 "duration_days": 7,
-                "reasoning": "Jinni AI Risk Engine recommends a conservative spending limit ($10 per trade, $50 weekly budget) based on your transaction profile and current Sepolia liquidity, keeping delegation parameters secure."
+                "reasoning": "JINNI Agent Risk Engine recommends a conservative spending limit ($10 per trade, $50 weekly budget) based on your transaction profile and current Sepolia liquidity, keeping delegation parameters secure."
             })
         else:
             # Token Scoring Fallback
@@ -166,7 +166,7 @@ class WalletAnalysisAgent:
         }}
         """
 
-        system_prompt = "You are the Jinni Wallet Analysis Agent. You evaluate wallet risk metrics and recommend conservative spending boundaries."
+        system_prompt = "You are the JINNI Agent Wallet Analysis Agent. You evaluate wallet risk metrics and recommend conservative spending boundaries."
 
         result_json = call_venice_ai(prompt, system_prompt)
         policy = json.loads(result_json)
@@ -205,7 +205,7 @@ class ResearchAgent:
         }}
         """
 
-        system_prompt = "You are the Jinni Research Agent. You analyze token technical indicators and market metrics to generate actionable trade signals."
+        system_prompt = "You are the JINNI Agent Research Agent. You analyze token technical indicators and market metrics to generate actionable trade signals."
 
         result_json = call_venice_ai(prompt, system_prompt)
         analysis = json.loads(result_json)

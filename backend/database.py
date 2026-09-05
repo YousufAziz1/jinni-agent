@@ -8,7 +8,7 @@ engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread":
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Original JINNI Models (Preserved 100%)
+# DeFi Vault Models (Preserved for Full Wallet & Vault Compatibility)
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
@@ -46,7 +46,7 @@ class Delegation(Base):
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-# New JINNI Agent Core Models
+# JINNI Agent Core Models
 class ProposalModel(Base):
     __tablename__ = "agent_proposals"
 
@@ -76,11 +76,11 @@ class ProposalModel(Base):
     is_demo = Column(Boolean, default=False)
 
 class PolicyModel(Base):
-    __tablename__ = "agent_policies"
+    __tablename__ = "policies"
 
     id = Column(String, primary_key=True, index=True)
     version = Column(String, default="1.0.0")
-    name = Column(String, default="Standard JINNI Safety Guard")
+    name = Column(String, default="Standard JINNI Agent Safety Guard")
     max_transaction_value = Column(Float, default=500.0)
     max_daily_spend = Column(Float, default=1000.0)
     max_slippage = Column(Float, default=1.0)

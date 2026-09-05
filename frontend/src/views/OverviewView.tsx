@@ -155,7 +155,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <span>The Separation of Powers Architecture</span>
         </h3>
         <p className="text-xs text-gray-400 mb-6">
-          How JINNI Agent prevents rogue AI spending and ensures multi-tiered cryptographic governance.
+          How JINNI Agent prevents rogue AI spending through independent policy enforcement and GenLayer intelligent adjudication.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
@@ -185,9 +185,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
             <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold mb-3">4</div>
-            <h4 className="font-bold text-white mb-1">Gate & Proof</h4>
+            <h4 className="font-bold text-white mb-1">Gate & Audit Proof</h4>
             <p className="text-gray-400 text-[11px] leading-relaxed">
-              Only approved actions clear the execution gate. User confirms execution on Sepolia and generates an immutable Decision Proof.
+              Only approved actions clear the execution gate. User confirms execution on Sepolia and generates an auditable Decision Audit Proof.
             </p>
           </div>
         </div>

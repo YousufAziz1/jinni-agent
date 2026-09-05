@@ -410,11 +410,11 @@ def test_demo_scenarios_have_correct_four_modes():
     assert insufficient.execution.status == "BLOCKED"
 
 # -------------------------------------------------------------
-# 5. Legacy JINNI Regression Tests
+# 5. DeFi Vault & AI Research Regression Tests
 # -------------------------------------------------------------
 
-def test_legacy_jinni_status_endpoint():
-    """Verify legacy /api/status continues to return expected fields and new branding."""
+def test_defi_vault_status_endpoint():
+    """Verify /api/status returns expected fields and JINNI Agent branding."""
     from main import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
@@ -430,8 +430,8 @@ def test_legacy_jinni_status_endpoint():
     assert "USDC" in data["supported_tokens"]
     assert "LINK" in data["supported_tokens"]
 
-def test_legacy_score_token_endpoint():
-    """Verify legacy /api/score-token continues working."""
+def test_research_score_token_endpoint():
+    """Verify research /api/score-token continues working."""
     from main import app
     from fastapi.testclient import TestClient
     client = TestClient(app)
