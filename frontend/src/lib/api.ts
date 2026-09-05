@@ -224,7 +224,6 @@ export const api = {
     return res.json()
   },
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDelegation(userAddress: string): Promise<any> {
     const res = await fetch(`${API_BASE}/delegation?user_address=${userAddress}`)
     if (!res.ok) throw new Error('Failed to load delegation')

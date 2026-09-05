@@ -9,7 +9,6 @@ const toAddr = (addr: string): `0x${string}` =>
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ethereum?: any
   }
 }
@@ -19,7 +18,7 @@ export const DELEGATOR_CONTRACT = toAddr('0x5462D420CEf200c8704Db6b48BE9Db3A000A
 const DEFAULT_USDC = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238'
 const STORAGE_KEY = 'jinni_mock_token_addresses'
 
-export let TOKEN_INFO: Record<string, { address: `0x${string}`; decimals: number }> = {
+export const TOKEN_INFO: Record<string, { address: `0x${string}`; decimals: number }> = {
   WETH: { address: toAddr('0xfff9976782d46CC05630D1f6eBAb18b2324d6B14'), decimals: 18 },
   USDC: { address: toAddr(DEFAULT_USDC), decimals: 6 },
   LINK: { address: toAddr('0x779877A7B0D9E8603169DdbD7836e478b4624789'), decimals: 18 },

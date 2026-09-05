@@ -1,13 +1,14 @@
-# 🧞 JINNI — Autonomous DeFi Wallet Agent
+# 🧞 JINNI Agent — Autonomous Actions. Independent Judgment.
 
-> 🎯 Built for the MetaMask Smart Accounts x Venice AI Hackathon
+> 🏆 Built for the [GenLayer Agent Tank Hackathon](https://portal.genlayer.foundation/agent-tank/hackathon)  
+> 💡 **Core Thesis:** *AI agents can propose. GenLayer decides.*
 
 <div align="center">
-  <img src="frontend/public/logo.jpg" alt="JINNI Logo" width="120" style="border-radius: 20px; border: 2px solid #6c63ff;" />
-  <h3>Autonomous Agentic DeFi Wallet Layer</h3>
-  <p>Delegated execution powered by Venice AI, MetaMask EIP-712 permissions, and ERC-7710/7715 architectures.</p>
+  <img src="frontend/public/logo.jpg" alt="JINNI Agent Logo" width="120" style="border-radius: 20px; border: 2px solid #6c63ff;" />
+  <h3>AI-Assisted Autonomous Commerce with Independent Adjudication</h3>
+  <p>Enforcing separation of powers between AI intent, deterministic risk policies, decentralized GenLayer consensus, and user execution.</p>
 
-  [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?style=for-the-badge&logo=vercel&color=000000)](https://jinni-omega.vercel.app/)
+  [![GenLayer Studionet](https://img.shields.io/badge/GenLayer-Studionet%20(61999)-purple?style=for-the-badge&logo=ethereum)](https://studio.genlayer.com/)
   [![Network Sepolia](https://img.shields.io/badge/Sepolia-Connected-blue?style=for-the-badge&logo=ethereum&color=454a75)](https://sepolia.etherscan.io/)
   [![Powered by Venice AI](https://img.shields.io/badge/Venice%20AI-Llama3.3--70b-orange?style=for-the-badge&logo=openai&color=e6643c)](https://venice.ai/)
   [![License MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge&color=2e8c58)](./LICENSE)
@@ -15,210 +16,208 @@
 
 ---
 
-## 🔗 Live Resources
+## 🔗 Live Resources & Deployments
 
-* **Live Frontend**: [https://jinni-omega.vercel.app/](https://jinni-omega.vercel.app/)
-* **Live Backend API**: [https://jinni-6wfe.onrender.com/api/status](https://jinni-6wfe.onrender.com/api/status)
+* **Live Web App**: [https://jinni-omega.vercel.app/](https://jinni-omega.vercel.app/)
+* **Backend API**: `http://localhost:8000/api` (Local) / [https://jinni-6wfe.onrender.com/api/status](https://jinni-6wfe.onrender.com/api/status)
 * **Demo Video**: [https://youtu.be/skp-PdfZ4Ko](https://youtu.be/skp-PdfZ4Ko)
-* **X (Twitter) Profile**: [https://x.com/JinniAgent](https://x.com/JinniAgent)
-* **Launch Post**: [https://x.com/JinniAgent/status/2066420765499801732](https://x.com/JinniAgent/status/2066420765499801732)
+* **Sepolia Escrow Vault**: [`0x5462D420CEf200c8704Db6b48BE9Db3A000A231C`](https://sepolia.etherscan.io/address/0x5462D420CEf200c8704Db6b48BE9Db3A000A231C)
+* **GenLayer Intelligent Contract Code**: [`contracts/JinniAgentGuard.py`](./contracts/JinniAgentGuard.py)
 
 ---
 
-## 🎨 Platform Dashboard
+## 1. What JINNI Agent Is
 
-![JINNI Dashboard](./screenshot.png)
+**JINNI Agent** is an on-chain commerce and trading guard designed for the agentic economy. It prevents economic loss and malicious prompt manipulation by establishing an immutable rule:
 
----
+> **An AI agent must not be allowed to approve its own economically meaningful action.**
 
-## 🏆 Hackathon Track Mapping
-
-| Track / Integration | Technology Used | Implementation Details & Code Files |
-| :--- | :--- | :--- |
-| **MetaMask & EIP-712 Delegations** | MetaMask EIP-712 Signatures | Users sign typed spending limits securely via MetaMask, simulating non-custodial session authorization and EIP-7715 keys. <br> 📄 See [`frontend/src/lib/web3.ts`](./frontend/src/lib/web3.ts) |
-| **Venice AI Reasoning Core** | Llama-3.3-70b Inference | Evaluates user wallet history, recommends safe daily risk limits, and scores tokens to execute swaps autonomously. <br> 📄 See [`backend/agents.py`](./backend/agents.py) |
-| **ERC-7715 / Permissioning** | On-Chain Delegated Permissions | Restricts agent actions to specific assets, trade sizes, and expiration limits verified directly inside smart contracts. <br> 📄 See [`contracts/JinniDelegator.sol`](./contracts/JinniDelegator.sol) |
-| **ERC-7710 / Delegations** | Non-Custodial Vault Swapping | Ensures the agent EOA can only interact within user-deposited vault parameters and has zero rights to withdraw funds. <br> 📄 See [`contracts/JinniDelegator.sol`](./contracts/JinniDelegator.sol) |
+In JINNI Agent, an AI agent may evaluate market indicators, analyze user wallet holdings, and formulate an actionable proposal with a concise user-facing rationale. However, the AI agent **cannot write the approval state**. Final approval is strictly adjudicated by an independent **GenLayer Intelligent Contract** or held in an isolated, configuration-blocked state when unconfigured.
 
 ---
 
-## 🚀 Key Features
+## 2. Problem & Solution
 
-* **AI-Generated Risk Policy**: Venice AI checks your wallet holdings and recommends trade sizes, weekly limits, and duration bounds.
-* **On-Chain Session Signatures**: EIP-712 session approvals register agent spending limits on-chain, keeping you in full control.
-* **Non-Custodial Escrow Vault**: Users deposit Sepolia ETH, USDC, LINK, or UNI. The agent swaps inside the Uniswap V3 Pool but can never extract funds.
-* **Position Monitoring Agent**: Evaluates active vault swaps with automated exit logic (Stop Loss & Take Profit thresholds).
-* **Built-in Sepolia Faucet**: Mint Mock USDC, LINK, or UNI directly on-chain through the dashboard.
+### The Agent Alignment Dilemma
+* Autonomous agents have access to private keys or smart account session delegations.
+* Prompt injection, hallucinated liquidity, stale oracle feeds, and flash loan attacks can manipulate an AI model into authorizing catastrophic trades.
+* Existing tools rely on centralized backends or client-only checks that can be bypassed.
+
+### The JINNI Agent Solution
+1. **Separation of Concerns**: AI proposes → Policy checks bounds → Evidence collected → GenLayer multi-validator consensus adjudicates → Execution gate controls fund release → User signs via MetaMask → Cryptographic Decision Proof recorded.
+2. **Strict Truthfulness**: Missing data remains `null`, `UNKNOWN`, `UNAVAILABLE`, or `INSUFFICIENT_DATA`. It is never converted into safe or approved results.
+3. **Multi-Validator Equivalence Consensus**: Non-deterministic AI verification is wrapped in GenLayer's Equivalence Principle (`gl.eq_principle.strict_eq`), requiring independent validator nodes to reach consensus on trade safety and rationale integrity.
 
 ---
 
-## 📐 System Architecture & Flow
+## 3. Why GenLayer?
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Frontend as Jinni React Dashboard
-    participant Backend as FastAPI Backend Agent
-    participant Contract as JinniDelegator Vault
-    participant Venice as Venice AI Core
-    
-    User->>Frontend: Connect MetaMask Smart Account
-    Frontend->>Backend: Request Wallet Analysis
-    Backend->>Venice: Fetch balance/tx history & evaluate risk
-    Venice-->>Backend: Recommend maximum limits policy
-    Backend-->>Frontend: Return policy recommendations
-    User->>Frontend: Approve Policy limits
-    Frontend->>User: Request EIP-712 signature (ERC-7715 simulation)
-    User-->>Frontend: Sign with MetaMask
-    Frontend->>Contract: Submit signature to register delegation on-chain
-    Contract-->>Frontend: Delegation granted on-chain
-    Frontend->>Backend: Activate autonomous trading agent
-    
-    loop Research & Trading Loop
-        Backend->>Venice: Analyze token pricing & technical indicators
-        Venice-->>Backend: Decision (Score, Verdict: BUY/HOLD/SELL, Reasoning)
-        Alt Verdict is BUY and delegation is active
-            Backend->>Contract: Call executeTrade(USDC -> LINK) using Agent key
-            Contract->>Contract: Validate trade size & weekly budget
-            Contract->>Uniswap: Execute swap on SwapRouter02 (Sepolia)
-            Uniswap-->>Contract: Credit LINK vault balance
-            Contract-->>Backend: Emit TradeExecuted event
-        end
-    end
-    
-    loop Position Monitoring Loop
-        Backend->>Backend: Fetch live prices & check active positions
-        Alt Stop Loss or Take Profit crossed
-            Backend->>Contract: Call executeTrade(LINK -> USDC) using Agent key
-            Contract->>Uniswap: Swap target asset back to USDC
-            Uniswap-->>Contract: Credit USDC vault balance
-            Contract->>Backend: Mark Position as CLOSED
-        end
-    end
+Traditional smart contracts (EVM) are deterministic and cannot understand natural language or evaluate agent rationales. Off-chain LLMs are centralized, single points of failure.
+
+**GenLayer Intelligent Contracts** combine Python smart contract execution with decentralized AI validator consensus:
+* **Natural Language Interpretation**: Contracts understand structured agent rationales and detect prompt injections or deviations from safety policies.
+* **Equivalence Principle**: Multiple independent validators run non-deterministic prompts and achieve cryptographic consensus on outcomes (`APPROVE`, `REJECT`, `DISPUTE`, `INSUFFICIENT_DATA`).
+* **Web & Oracle Integration**: Intelligent Contracts can inspect live web oracles and verify data independently.
+
+---
+
+## 4. System Architecture
+
+```
+User / Agent Intent
+  ↓
+JINNI Agent
+  ↓
+Proposal Engine (Formats typed proposal with verifiable evidence & rationale)
+  ↓
+Policy Engine (Server-side deterministic checks: PASS | FAIL | UNKNOWN)
+  ↓
+Evidence Layer (Verifiable price feeds, contract verification, pool liquidity)
+  ↓
+GenLayer Intelligent Contract (JinniAgentGuard.py on Studionet / Localnet)
+  ↓
+Independent Adjudication (Multi-validator AI consensus via Equivalence Principle)
+  ↓
+Decision (APPROVE | REJECT | DISPUTE | INSUFFICIENT_DATA)
+  ↓
+Execution Gate (READY | AWAITING_USER_CONFIRMATION | BLOCKED)
+  ↓
+Wallet / On-chain Action (EIP-1193 MetaMask execution on Sepolia)
+  ↓
+Decision Proof (Verifiable cryptographic audit certificate)
 ```
 
 ---
 
-## ⛓️ Deployed Contracts (Sepolia Network)
+## 5. Core Platform Features
 
-* **JinniDelegator Vault**: [`0x5462D420CEf200c8704Db6b48BE9Db3A000A231C`](https://sepolia.etherscan.io/address/0x5462D420CEf200c8704Db6b48BE9Db3A000A231C)
-* **Test USDC Token**: [`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238)
-* **Test LINK Token**: [`0x779877A7B0D9E8603169DdbD7836e478b4624789`](https://sepolia.etherscan.io/address/0x779877A7B0D9E8603169DdbD7836e478b4624789)
-* **Test UNI Token**: [`0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984`](https://sepolia.etherscan.io/address/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984)
-* **Uniswap V3 Router02**: `0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E`
+### 🛡️ GenLayer Trade Guard Pipeline
+A visual 7-stage state machine that inspects every proposal in real-time:
+1. **Proposed**: Action type, asset, amount, and rationale formulated.
+2. **Policy Check**: Evaluates spending limits, slippage caps, and allowed tokens.
+3. **Submitted to GenLayer**: Dispatched to `JinniAgentGuard.py` via GenLayer RPC.
+4. **Consensus Transaction**: Monitors state (`PENDING` → `ACCEPTED` → `FINALIZED`).
+5. **Final Decision**: Explicit verdict (`APPROVE` | `REJECT` | `DISPUTE` | `INSUFFICIENT_DATA`).
+6. **Execution Gate**: Gated by policy and human confirmation threshold.
+7. **Execution Result**: Settled on Sepolia or cleanly marked as `SIMULATION` / `PREVIEW`.
+
+### 📊 Server-Side Policy Engine
+Enforces strict boundaries before any transaction reaches the blockchain:
+* **Max Single Transaction Value**: Ceiling limit (default `$500.00`).
+* **Max Daily Cumulative Spend**: Rate-limiting limit (default `$1,000.00`).
+* **Max Slippage Tolerance**: MEV protection (default `1.0%`).
+* **Allowed & Blocked Tokens**: Explicit whitelist (`USDC`, `LINK`, `UNI`, `WETH`).
+* **Minimum Pool Liquidity**: Missing liquidity remains `UNKNOWN` and is never assumed safe.
+* **Verified Contract Requirement**: Requires on-chain verified source code.
+
+### 📜 Verifiable Decision Proofs
+Every finalized proposal produces an immutable Decision Proof:
+* Proposal ID, Action, Asset, and Amount USD.
+* Policy Version and Evaluation Result.
+* Evidence Summary (total items, verified items, unavailable items).
+* GenLayer Contract Address, Transaction Hash, and Transaction Status.
+* Final Decision Verdict and Consensus Reasoning.
+* Execution Transaction Hash and Timestamp.
+* Cryptographic stage-by-stage audit trail.
+* Exportable as JSON certificate.
+
+### 🏛️ Preserved JINNI DeFi Vault (Legacy)
+100% backward-compatible preservation of original hackathon features:
+* **Non-Custodial Escrow Vault**: Users deposit Sepolia ETH, USDC, LINK, or UNI.
+* **MetaMask EIP-712 Session Signatures**: Delegated execution permissions.
+* **Venice AI Reasoning Core**: Wallet analysis and token momentum research.
+* **Sepolia Test Faucet**: Unlimited minting of Mock USDC, LINK, and UNI.
+* **Automated Position Monitoring**: Real-time exit signal generation.
 
 ---
 
-## 🛠️ Installation & Setup
+## 6. Deterministic Demo Scenarios
+
+JINNI Agent provides 4 deterministically labeled demo fixtures to demonstrate each gate outcome:
+
+| Scenario | Action | Policy Evaluation | GenLayer Adjudication | Execution Gate |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Safe Proposal** | BUY $5 LINK | `PASS` | `APPROVE` | `AWAITING_USER_CONFIRMATION` (Requires human click to execute) |
+| **2. Policy Violation** | BUY $2,500 UNI | `FAIL` (Exceeds $500 max) | Bypassed | `BLOCKED` (Exceeds trade ceiling) |
+| **3. Insufficient Evidence** | SWAP $50 UNKNOWN_MEME | `UNKNOWN` (Oracle missing) | `INSUFFICIENT_DATA` | `BLOCKED` (Data missing, never assumed safe) |
+| **4. GenLayer Rejection** | PAY $100 USDC (8.5% slippage) | `PASS` | `REJECT` (Consensus flag) | `BLOCKED` (Multi-validator consensus reject) |
+
+*Demo fixtures are visibly marked with `DEMO FIXTURE` / `SIMULATION SCENARIO` and are isolated from production logic.*
+
+---
+
+## 7. Tech Stack
+
+* **Intelligent Contract**: Python (`py-genlayer:latest`), GenLayer VM (GenVM).
+* **Frontend**: React 18, Vite 5, TypeScript 5.6, TailwindCSS 3.4, Viem 2.52, Lucide React, Framer Motion.
+* **Backend**: FastAPI, Uvicorn, SQLAlchemy, Web3.py, Pydantic V2, Requests.
+* **AI Reasoning**: Venice AI (`llama-3.3-70b`) & GenLayer Equivalence Principle AI validators.
+* **Smart Contracts (EVM)**: Solidity 0.8.20 (`JinniDelegator.sol`), Sepolia Uniswap V3.
+
+---
+
+## 8. Local Development & Installation
 
 ### Prerequisites
-* **Python 3.10+** (Backend)
-* **Node.js v18+** & `pnpm` (Frontend)
+* **Node.js v18+** & `pnpm` (or `npm`)
+* **Python 3.10+**
 * **MetaMask browser extension** (Sepolia network)
 
 ### 1. Backend Setup
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Create environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-4. Configure your `.env` values (Venice API Key, RPC URL, and Agent private key).
-5. Run the server:
-   ```bash
-   python main.py
-   ```
-   Backend runs at `http://localhost:8000`.
+```bash
+cd backend
+python -m pip install -r requirements.txt
+python -m pytest tests/test_agent_system.py -v
+python main.py
+```
+Backend runs at `http://localhost:8000`.
 
 ### 2. Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   ```
-2. Install packages:
-   ```bash
-   pnpm install
-   ```
-3. Start the Vite server:
-   ```bash
-   pnpm dev
-   ```
-   Frontend runs at `http://localhost:5173`.
-
----
-
-## 💡 Step-by-Step Test Guide
-
-1. **Connect MetaMask**: Click **Connect Wallet** (top-right) and switch your network to **Sepolia**.
-2. **Mock Token setup**: Click **Setup Local Test Environment** in the faucet card to register/deploy the testing tokens inside MetaMask.
-3. **Mint USDC**: Click **Claim USDC** to mint 1,000 mock USDC for testing.
-4. **Deposit to Vault**: Select `USDC` in the **Agent Trading Vault** panel, input `25`, and click **Deposit to Vault**.
-5. **Analyze Wallet**: Click **Analyze Wallet Risk (Venice AI)**. The agent will read your Sepolia balances and generate a custom trading limit policy.
-6. **Grant Permissions**: Click **Approve Policy & Sign EIP-712**. Sign the signature request inside MetaMask.
-7. **DeFi Research**: Type a token symbol (e.g. `LINK` or `UNI`) in the **DeFi Research Agent** box and click **Score Token** to get AI evaluation.
-8. **Trade**: If the AI returns a `BUY` verdict, click **Execute Agent Swap** to execute the trade autonomously using the agent.
-9. **Exit Monitoring**: The position will load under **Active Positions Monitor**. The background exit loops will automatically execute a sell swap if Take Profit or Stop Loss thresholds are hit.
-
----
-
-## ✉️ Outreach / DM Template
-
-If you want to reach out to builders, mentors, or judges, use this template:
-
-```markdown
-Hi 👋
-
-I just completed my hackathon project JINNI — Autonomous DeFi Wallet Agent.
-
-JINNI combines:
-* MetaMask Smart Accounts
-* ERC-7715 Permissions
-* ERC-7710 Delegations
-* Venice AI
-
-Users can connect their wallet, set spending limits, grant permissions, and allow an AI agent to research and execute actions within those limits while remaining fully in control.
-
-### Demo Video
-https://youtu.be/skp-PdfZ4Ko
-
-### GitHub
-https://github.com/YousufAziz1/jinni
-
-### X Profile
-https://x.com/JinniAgent
-
-### Launch Post
-https://x.com/JinniAgent/status/2066420765499801732
-
-Current features:
-✅ Wallet Connection
-✅ Agent Permissions
-✅ Venice AI Research Agent
-✅ Trading Vault
-✅ Activity Logs
-✅ Position Monitoring UI
-✅ Sepolia Test Environment
-
-I'm currently polishing the final submission.
-
-I'd really appreciate any feedback on:
-* Missing features
-* UX improvements
-* Hackathon judging perspective
-* Documentation gaps
-
-Thanks for taking a look! 🙏
+```bash
+cd frontend
+pnpm install
+npm run build
+npm run dev
 ```
+Frontend runs at `http://localhost:5173`.
 
 ---
 
-*Built with ❤️ for the Hackathon by Yousuf.*
+## 9. Environment Variables
+
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `GENLAYER_NETWORK` | GenLayer network identifier | `studionet` |
+| `GENLAYER_CHAIN_ID` | GenLayer network chain ID | `61999` |
+| `GENLAYER_RPC` | GenLayer JSON-RPC endpoint | `https://studio.genlayer.com/api` |
+| `JINNI_AGENT_CONTRACT_ADDRESS` | Deployed `JinniAgentGuard` contract | *(Leave blank for isolated adapter mode)* |
+| `GENLAYER_EXPLORER_BASE_URL` | GenLayer Explorer URL | `https://studio.genlayer.com/explorer` |
+| `SEPOLIA_RPC_URL` | Ethereum Sepolia RPC URL | `https://rpc.ankr.com/eth_sepolia/...` |
+| `DELEGATOR_CONTRACT_ADDRESS` | Deployed JinniDelegator on Sepolia | `0x5462D420CEf200c8704Db6b48BE9Db3A000A231C` |
+| `VENICE_API_KEY` | Venice AI API Key (optional) | `your_venice_api_key` |
+| `DATABASE_URL` | SQLAlchemy Database URI | `sqlite:///./jinni.db` |
+| `PORT` | Backend server port | `8000` |
+
+---
+
+## 10. Security & Non-Negotiable Guarantees
+
+1. **Zero Private Key Exposure**: Private keys and seed phrases are never stored, logged, or requested. All execution uses connected EIP-1193 MetaMask wallets.
+2. **No Data Fabrication**: Validator votes, consensus percentages, confidence metrics, and round counts are never fabricated. If telemetry is not returned by the GenLayer receipt, it displays `Unavailable` or `Not returned by GenLayer`.
+3. **Execution Gate Immutability**: No AI agent output can directly invoke the execution gate. Transactions require policy clearance and GenLayer approval.
+
+---
+
+## 11. Known Limitations & Hackathon Status
+
+* **GenLayer Deployment**: When live GenLayer deployment credentials or local simulators are absent, the application operates in **isolated adapter mode** (`CONFIGURATION_BLOCKED`). The contract code ([`contracts/JinniAgentGuard.py`](./contracts/JinniAgentGuard.py)) and deployer ([`contracts/deploy_genlayer.py`](./contracts/deploy_genlayer.py)) are fully implemented and verified against GenLayer specifications.
+* **Sepolia Testnet**: Test transactions execute against Sepolia Uniswap V3 mock pairs.
+
+---
+
+## 12. Roadmap
+
+* [ ] Multi-agent negotiation and cross-agent service payment escrow on GenLayer.
+* [ ] Automated fallback arbitration when GenLayer consensus returns `DISPUTE`.
+* [ ] Zero-knowledge proof generation for decision verification across EVM rollups.
+* [ ] Native GenLayer ERC-7715 session account delegation support.

@@ -1,0 +1,445 @@
+import pytest
+import json
+import os
+import sys
+
+# Ensure backend directory is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from agent_domain import (
+    AgentProposal,
+    EvidenceItem,
+    PolicyRuleConfig,
+    GenLayerResult,
+    GenLayerTelemetry,
+    ExecutionState
+)
+from policy_engine import PolicyEngine
+from execution_gate import ExecutionGate
+from genlayer_service import GenLayerService
+from demo_scenarios import get_demo_scenarios
+
+# -------------------------------------------------------------
+# 1. Proposal Validation & Policy Engine Tests
+# -------------------------------------------------------------
+
+def test_policy_engine_pass():
+    """Valid proposal within limits and verified evidence should PASS."""
+    proposal = AgentProposal(
+        id="prop-test-pass",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="LINK",
+        chainId=11155111,
+        amount="1.0",
+        amountUsd="15.0",
+        slippage="0.5%",
+        evidence=[
+            EvidenceItem(
+                id="ev-1",
+                source="CryptoCompare",
+                type="PRICE_FEED",
+                value="$15.00",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            ),
+            EvidenceItem(
+                id="ev-2",
+                source="Etherscan",
+                type="CONTRACT_VERIFICATION",
+                value="0x779877A7B0D9E8603169DdbD7836e478b4624789",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            ),
+            EvidenceItem(
+                id="ev-3",
+                source="Uniswap V3 Pool",
+                type="LIQUIDITY_CHECK",
+                value="250000.0",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            )
+        ]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal)
+    assert result == "PASS"
+    assert "criteria satisfied" in reason.lower()
+    assert breakdown["checks"]["maxTransactionValue"]["status"] == "PASS"
+    assert breakdown["checks"]["maxSlippage"]["status"] == "PASS"
+    assert breakdown["checks"]["allowedTokens"]["status"] == "PASS"
+
+def test_policy_engine_fail_exceed_tx_value():
+    """Proposal exceeding max transaction value ($500) must FAIL."""
+    proposal = AgentProposal(
+        id="prop-test-fail-amount",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="UNI",
+        chainId=11155111,
+        amount="500.0",
+        amountUsd="2500.0",
+        slippage="0.5%",
+        evidence=[
+            EvidenceItem(
+                id="ev-1",
+                source="CryptoCompare",
+                type="PRICE_FEED",
+                value="$5.00",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            ),
+            EvidenceItem(
+                id="ev-2",
+                source="Etherscan",
+                type="CONTRACT_VERIFICATION",
+                value="0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            )
+        ]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal)
+    assert result == "FAIL"
+    assert "exceeds" in reason.lower()
+    assert breakdown["checks"]["maxTransactionValue"]["status"] == "FAIL"
+
+def test_policy_engine_fail_excessive_slippage():
+    """Proposal exceeding maximum slippage (1.0%) must FAIL."""
+    proposal = AgentProposal(
+        id="prop-test-fail-slippage",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="USDC",
+        chainId=11155111,
+        amount="10.0",
+        amountUsd="10.0",
+        slippage="4.5%",
+        evidence=[
+            EvidenceItem(
+                id="ev-1",
+                source="Etherscan",
+                type="CONTRACT_VERIFICATION",
+                value="0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            )
+        ]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal)
+    assert result == "FAIL"
+    assert "slippage" in reason.lower()
+    assert breakdown["checks"]["maxSlippage"]["status"] == "FAIL"
+
+def test_policy_engine_fail_unauthorized_token():
+    """Token not in allowed list must FAIL."""
+    proposal = AgentProposal(
+        id="prop-test-fail-token",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="SHIB",
+        chainId=11155111,
+        amount="100.0",
+        amountUsd="10.0",
+        slippage="0.5%",
+        evidence=[]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal)
+    assert result == "FAIL"
+    assert "not in allowed" in reason.lower()
+    assert breakdown["checks"]["allowedTokens"]["status"] == "FAIL"
+
+def test_policy_engine_unknown_on_missing_value():
+    """Missing USD value must evaluate to UNKNOWN, not PASS."""
+    proposal = AgentProposal(
+        id="prop-test-unknown-val",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="LINK",
+        chainId=11155111,
+        amount="1.0",
+        amountUsd=None,  # Missing
+        slippage="0.5%",
+        evidence=[
+            EvidenceItem(
+                id="ev-1",
+                source="Etherscan",
+                type="CONTRACT_VERIFICATION",
+                value="0x779877A7B0D9E8603169DdbD7836e478b4624789",
+                timestamp="2026-09-05T00:00:00Z",
+                status="VERIFIED"
+            )
+        ]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal)
+    assert result == "UNKNOWN"
+    assert "missing" in reason.lower()
+
+def test_policy_engine_missing_liquidity_never_assumed_safe():
+    """Missing liquidity must remain UNKNOWN and not defaulted to safe zero or low risk."""
+    config = PolicyRuleConfig(minLiquidityUsd=10000.0)
+    proposal = AgentProposal(
+        id="prop-test-no-liq",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        asset="LINK",
+        chainId=11155111,
+        amount="1.0",
+        amountUsd="10.0",
+        slippage="0.5%",
+        evidence=[
+            EvidenceItem(
+                id="ev-1",
+                source="Pool",
+                type="LIQUIDITY_CHECK",
+                value=None,  # Missing
+                status="UNAVAILABLE"
+            ),
+            EvidenceItem(
+                id="ev-2",
+                source="Etherscan",
+                type="CONTRACT_VERIFICATION",
+                value="0x779877A7B0D9E8603169DdbD7836e478b4624789",
+                status="VERIFIED"
+            )
+        ]
+    )
+    result, reason, breakdown = PolicyEngine.evaluate(proposal, config)
+    assert result == "UNKNOWN"
+    assert breakdown["checks"]["minLiquidity"]["status"] == "UNKNOWN"
+
+# -------------------------------------------------------------
+# 2. Execution Gate & State Transitions Tests
+# -------------------------------------------------------------
+
+def test_execution_gate_blocked_on_policy_fail():
+    """If policy fails, execution gate MUST be BLOCKED."""
+    proposal = AgentProposal(
+        id="prop-gate-fail",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="FAIL",
+        policyFailureReason="Exceeded max trade limit",
+        execution=ExecutionState(status="BLOCKED")
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "BLOCKED"
+    assert state == "POLICY_FAILED"
+    assert "policy violation" in reason.lower()
+
+def test_execution_gate_blocked_on_genlayer_reject():
+    """If GenLayer rejects, execution gate MUST be BLOCKED."""
+    proposal = AgentProposal(
+        id="prop-gate-rej",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        genlayer=GenLayerResult(
+            network="studionet",
+            decision="REJECT",
+            reasoning="Suspicious counterparty signature"
+        )
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "BLOCKED"
+    assert state == "REJECTED"
+    assert "rejected" in reason.lower()
+
+def test_execution_gate_blocked_on_genlayer_dispute():
+    """If GenLayer consensus is DISPUTE, execution gate MUST be BLOCKED."""
+    proposal = AgentProposal(
+        id="prop-gate-disp",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        genlayer=GenLayerResult(
+            network="studionet",
+            decision="DISPUTE",
+            reasoning="Validators split on price reasonableness"
+        )
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "BLOCKED"
+    assert state == "DISPUTED"
+    assert "dispute" in reason.lower()
+
+def test_execution_gate_blocked_on_genlayer_insufficient_data():
+    """If GenLayer returns INSUFFICIENT_DATA, execution gate MUST be BLOCKED."""
+    proposal = AgentProposal(
+        id="prop-gate-insuff",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        genlayer=GenLayerResult(
+            network="studionet",
+            decision="INSUFFICIENT_DATA",
+            reasoning="Missing required oracle verification"
+        )
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "BLOCKED"
+    assert state == "INSUFFICIENT_DATA"
+    assert "insufficient_data" in reason.lower()
+
+def test_execution_gate_human_confirmation_required():
+    """When policy PASS and GenLayer APPROVE, human confirmation must hold execution in AWAITING_USER_CONFIRMATION."""
+    proposal = AgentProposal(
+        id="prop-gate-human-confirm",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        genlayer=GenLayerResult(
+            network="studionet",
+            decision="APPROVE",
+            reasoning="Consensus reached"
+        ),
+        execution=ExecutionState(
+            status="BLOCKED",
+            requiresHumanConfirmation=True,
+            userConfirmed=False
+        )
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "AWAITING_USER_CONFIRMATION"
+    assert state == "AWAITING_CONFIRMATION"
+    assert "requires human confirmation" in reason.lower()
+
+def test_execution_gate_ready_after_user_confirmed():
+    """When user confirms, status transitions to READY."""
+    proposal = AgentProposal(
+        id="prop-gate-ready",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        genlayer=GenLayerResult(
+            network="studionet",
+            decision="APPROVE",
+            reasoning="Consensus reached"
+        ),
+        execution=ExecutionState(
+            status="AWAITING_USER_CONFIRMATION",
+            requiresHumanConfirmation=True,
+            userConfirmed=True
+        )
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status == "READY"
+    assert state == "READY_FOR_EXECUTION"
+    assert "cleared for execution" in reason.lower()
+
+# -------------------------------------------------------------
+# 3. Telemetry Isolation & Non-Fabrication Tests
+# -------------------------------------------------------------
+
+def test_telemetry_isolation_missing_fields_remain_null():
+    """Missing validator telemetry must remain null and not be synthesized."""
+    tel = GenLayerTelemetry()
+    assert tel.validatorCount is None
+    assert tel.validators is None
+    assert tel.votes is None
+    assert tel.votePercentage is None
+    assert tel.consensusPercentage is None
+    assert tel.confidence is None
+    assert tel.rounds is None
+    assert tel.latencyMs is None
+    assert tel.majorityAgreement is None
+    assert tel.resultName is None
+
+def test_finalized_tx_does_not_imply_approve():
+    """Separation of powers: A FINALIZED transaction status does not imply APPROVE decision."""
+    res = GenLayerResult(
+        network="studionet",
+        txHash="0x123",
+        txStatus="FINALIZED",
+        decision="REJECT",  # Finalized rejection
+        reasoning="Multi-validator consensus rejected action"
+    )
+    assert res.txStatus == "FINALIZED"
+    assert res.decision == "REJECT"
+    assert res.decision != "APPROVE"
+
+def test_ai_output_alone_cannot_authorize_execution():
+    """An AI proposal with no GenLayer adjudication must remain WAITING_FOR_GENLAYER / not executable."""
+    proposal = AgentProposal(
+        id="prop-ai-only",
+        createdAt="2026-09-05T00:00:00Z",
+        actionType="BUY",
+        policyResult="PASS",
+        agentRationale="I am an advanced AI agent and I strongly recommend this trade.",
+        genlayer=None,  # No GenLayer adjudication
+        execution=ExecutionState(status="BLOCKED")
+    )
+    status, state, reason = ExecutionGate.evaluate_gate(proposal)
+    assert status != "READY"
+    assert status != "EXECUTED"
+    assert status == "WAITING_FOR_GENLAYER"
+
+# -------------------------------------------------------------
+# 4. Demo Scenarios Determinism Tests
+# -------------------------------------------------------------
+
+def test_demo_scenarios_have_correct_four_modes():
+    """Verify the 4 deterministic demo scenarios exist and are tagged as demo."""
+    scenarios = get_demo_scenarios()
+    assert len(scenarios) == 4
+    for s in scenarios:
+        assert s.isDemo is True
+
+    # Scenario 1: Safe Proposal
+    safe = scenarios[0]
+    assert safe.policyResult == "PASS"
+    assert safe.genlayer is not None
+    assert safe.genlayer.decision == "APPROVE"
+    assert safe.execution.status == "AWAITING_USER_CONFIRMATION"
+
+    # Scenario 2: Policy Violation
+    violation = scenarios[1]
+    assert violation.policyResult == "FAIL"
+    assert violation.genlayer is None
+    assert violation.execution.status == "BLOCKED"
+
+    # Scenario 3: Insufficient Evidence
+    insufficient = scenarios[2]
+    assert insufficient.genlayer is not None
+    assert insufficient.genlayer.decision == "INSUFFICIENT_DATA"
+    assert insufficient.execution.status == "BLOCKED"
+
+    # Scenario 4: GenLayer Rejection
+    rejection = scenarios[3]
+    assert rejection.genlayer is not None
+    assert rejection.genlayer.decision == "REJECT"
+    assert rejection.execution.status == "BLOCKED"
+
+# -------------------------------------------------------------
+# 5. Legacy JINNI Regression Tests
+# -------------------------------------------------------------
+
+def test_legacy_jinni_status_endpoint():
+    """Verify legacy /api/status continues to return expected fields and new branding."""
+    from main import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    res = client.get("/api/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "online"
+    assert data["name"] == "JINNI Agent"
+    assert "Autonomous actions. Independent judgment." in data["tagline"]
+    assert "delegator_contract" in data
+    assert "supported_tokens" in data
+    assert "USDC" in data["supported_tokens"]
+    assert "LINK" in data["supported_tokens"]
+
+def test_legacy_score_token_endpoint():
+    """Verify legacy /api/score-token continues working."""
+    from main import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    res = client.post("/api/score-token", json={"symbol": "LINK"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["symbol"] == "LINK"
+    assert "score" in data["decision"]
+    assert "verdict" in data["decision"]
+
