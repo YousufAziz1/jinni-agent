@@ -16,6 +16,16 @@ export interface BackendAgentStatus {
   mode: "LIVE" | "CONFIGURATION_BLOCKED";
 }
 
+export interface AIProviderStatus {
+  provider: string;
+  model: string;
+  status: "CONNECTED" | "OLLAMA_LOCAL" | "AI_UNAVAILABLE";
+  baseUrl?: string | null;
+  apiKeyConfigured: boolean;
+  ollamaAvailable: boolean;
+  message: string;
+}
+
 export interface ActivityLogItem {
   id: number;
   timestamp: string;
@@ -29,6 +39,12 @@ export const agentApi = {
   async getGenLayerStatus(): Promise<BackendAgentStatus> {
     const res = await fetch(`${API_BASE}/agent/genlayer/status`);
     if (!res.ok) throw new Error("Failed to fetch GenLayer status");
+    return res.json();
+  },
+
+  async getAIStatus(): Promise<AIProviderStatus> {
+    const res = await fetch(`${API_BASE}/agent/ai/status`);
+    if (!res.ok) throw new Error("Failed to fetch AI status");
     return res.json();
   },
 

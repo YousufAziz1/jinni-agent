@@ -2,7 +2,6 @@ import json
 import requests
 from typing import Dict, Any
 from web3 import Web3
-from openai import OpenAI
 from config import settings
 from database import ActivityLog, Position
 
@@ -26,74 +25,7 @@ TOKEN_DECIMALS = {
 def get_w3():
     return Web3(Web3.HTTPProvider(settings.SEPOLIA_RPC_URL))
 
-def call_venice_ai(prompt: str, system_prompt: str) -> str:
-    if not settings.VENICE_API_KEY:
-        # Graceful fallback logic simulating Venice AI outputs if no key is provided
-        if "analyze" in prompt.lower() or "risk" in prompt.lower():
-            return json.dumps({
-                "max_spend_trade": 5.0,
-                "max_spend_week": 20.0,
-                "duration_days": 7,
-                "reasoning": "Based on the wallet history showing moderate Sepolia transactions, we recommend a safe spending limit of $5 per trade and $20 per week for 7 days to protect assets while allowing automated rebalancing."
-            })
-        elif "score" in prompt.lower() or "momentum" in prompt.lower():
-            symbol = "LINK"
-            for s in TOKEN_ADDRESSES.keys():
-                if s in prompt.upper():
-                    symbol = s
-            score = 82 if symbol == "LINK" else 74 if symbol == "UNI" else 88 if symbol == "WETH" else 50
-            verdict = "BUY" if score > 70 else "HOLD"
-            return json.dumps({
-                "score": score,
-                "verdict": verdict,
-                "confidence": "HIGH",
-                "reasoning": f"Technical analysis of {symbol} reveals strong consolidation above historical support. 24h volume has surged by 12% with positive RSI divergence, indicating high buy side momentum."
-            })
-        else:
-            return json.dumps({"verdict": "HOLD", "reasoning": "No actionable trigger detected."})
-
-    try:
-        client = OpenAI(
-            api_key=settings.VENICE_API_KEY,
-            base_url="https://api.venice.ai/api/v1"
-        )
-        response = client.chat.completions.create(
-            model="llama-3.3-70b",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"Error calling Venice AI: {e}")
-        # Provide premium, user-friendly fallback analysis based on the query type
-        if "max_spend_trade" in prompt or "wallet" in prompt.lower():
-            # Wallet Analysis Fallback
-            return json.dumps({
-                "max_spend_trade": 10.0,
-                "max_spend_week": 50.0,
-                "duration_days": 7,
-                "reasoning": "JINNI Agent Risk Engine recommends a conservative spending limit ($10 per trade, $50 weekly budget) based on your transaction profile and current Sepolia liquidity, keeping delegation parameters secure."
-            })
-        else:
-            # Token Scoring Fallback
-            symbol = "LINK"
-            for sym in ["USDC", "LINK", "UNI", "WETH"]:
-                if sym in prompt.upper():
-                    symbol = sym
-                    break
-            
-            score = 85 if symbol == "LINK" else 72 if symbol == "UNI" else 88 if symbol == "WETH" else 50
-            verdict = "BUY" if score > 70 else "HOLD"
-            return json.dumps({
-                "score": score,
-                "verdict": verdict,
-                "confidence": "HIGH",
-                "reasoning": f"Technical momentum for {symbol} indicates consolidation above principal support levels. Surge in 24h trading volume and bullish MACD crossover suggest favorable accumulation conditions."
-            })
+from ai_provider import ai_provider
 
 def get_token_price(symbol: str) -> float:
     """Gets real-time price of token in USD using CryptoCompare free API"""
@@ -145,31 +77,7 @@ class WalletAnalysisAgent:
         balance_eth = float(Web3.from_wei(balance_wei, 'ether'))
         tx_count = w3.eth.get_transaction_count(Web3.to_checksum_address(user_address))
 
-        prompt = f"""
-        Analyze this Ethereum Sepolia wallet for setting up an autonomous trading delegation:
-        - Wallet Address: {user_address}
-        - Sepolia ETH Balance: {balance_eth} ETH
-        - Transaction Count: {tx_count}
-
-        Suggest a safe spending policy containing:
-        1. max_spend_trade (maximum value in USD allowed per single trade)
-        2. max_spend_week (maximum total USD value allowed per week)
-        3. duration_days (duration of the delegation)
-        4. reasoning (brief text explaining your recommendation based on the wallet stats)
-
-        Return ONLY a JSON object:
-        {{
-            "max_spend_trade": float,
-            "max_spend_week": float,
-            "duration_days": int,
-            "reasoning": "string"
-        }}
-        """
-
-        system_prompt = "You are the JINNI Agent Wallet Analysis Agent. You evaluate wallet risk metrics and recommend conservative spending boundaries."
-
-        result_json = call_venice_ai(prompt, system_prompt)
-        policy = json.loads(result_json)
+        policy = ai_provider.analyze_wallet(user_address, balance_eth, tx_count)
 
         log = ActivityLog(
             agent="Wallet Analysis",
@@ -186,29 +94,7 @@ class ResearchAgent:
     @staticmethod
     def score_token(symbol: str, db_session) -> Dict[str, Any]:
         metrics = get_token_metrics(symbol)
-
-        prompt = f"""
-        Research and score the token {symbol} based on the following real-time market metrics:
-        - Current Price: ${metrics['price']}
-        - 24h Volume: ${metrics['volume_24h']:,}
-        - 24h Price Change: {metrics['change_24h_pct']}%
-        - 24h High/Low: ${metrics['high_24h']} / ${metrics['low_24h']}
-
-        Decide if the agent should BUY, SELL, or HOLD. Provide a numeric rating from 0 to 100, confidence (LOW, MEDIUM, HIGH), and reasoning.
-
-        Return ONLY a JSON object:
-        {{
-            "score": int,
-            "verdict": "BUY" | "SELL" | "HOLD",
-            "confidence": "LOW" | "MEDIUM" | "HIGH",
-            "reasoning": "string"
-        }}
-        """
-
-        system_prompt = "You are the JINNI Agent Research Agent. You analyze token technical indicators and market metrics to generate actionable trade signals."
-
-        result_json = call_venice_ai(prompt, system_prompt)
-        analysis = json.loads(result_json)
+        analysis = ai_provider.score_token(symbol, metrics)
 
         log = ActivityLog(
             agent="Research",

@@ -44,6 +44,7 @@ from policy_engine import PolicyEngine
 from genlayer_service import GenLayerService
 from execution_gate import ExecutionGate
 from demo_scenarios import get_demo_scenarios
+from ai_provider import ai_provider
 
 # Initialize database
 init_db()
@@ -203,10 +204,19 @@ class UpdatePolicyRequest(BaseModel):
     automaticExecution: Optional[bool] = None
     humanConfirmationThreshold: Optional[float] = None
 
+class GenerateAIProposalRequest(BaseModel):
+    userIntent: Optional[str] = None
+    asset: Optional[str] = "LINK"
+
 
 # =============================================================
 # JINNI Agent Endpoints
 # =============================================================
+
+@app.get("/api/agent/ai/status")
+def get_ai_status():
+    """Returns truthful health & status of the off-chain AI provider."""
+    return ai_provider.health_check()
 
 @app.get("/api/agent/genlayer/status")
 def get_genlayer_status():
@@ -400,6 +410,49 @@ def create_proposal(req: CreateProposalRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return proposal
+
+@app.post("/api/agent/proposals/generate-ai")
+def generate_ai_proposal(req: GenerateAIProposalRequest, db: Session = Depends(get_db)):
+    """
+    Autonomously generates an agent proposal using the configured free AI provider or local Ollama.
+    If no AI provider is configured or reachable, returns AI_UNAVAILABLE (no fake proposals).
+    """
+    health = ai_provider.health_check()
+    if health["status"] == "AI_UNAVAILABLE":
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "AI_UNAVAILABLE",
+                "message": "Off-chain AI provider is not configured or reachable. Cannot autonomously generate proposal without active AI reasoning. Configure a free API key (Groq/Gemini) or run Ollama locally."
+            }
+        )
+
+    asset = (req.asset or "LINK").upper()
+    price_val = get_token_price(asset)
+    market_data = {
+        "asset": asset,
+        "priceUsd": price_val,
+        "allowedTokens": ["USDC", "LINK", "UNI", "WETH"],
+        "chain": "Ethereum Sepolia (Chain ID 11155111)"
+    }
+
+    ai_result = ai_provider.generate_agent_proposal(market_data, req.userIntent)
+    if ai_result.get("status") == "AI_UNAVAILABLE":
+        raise HTTPException(status_code=503, detail=ai_result)
+
+    # Route through standard proposal pipeline to enforce deterministic policy and evidence checks
+    create_req = CreateProposalRequest(
+        actionType=ai_result.get("actionType", "BUY"),
+        asset=ai_result.get("asset", asset),
+        amount=str(ai_result.get("amount", "1.0")),
+        amountUsd=str(ai_result.get("amountUsd", str(price_val))),
+        slippage=str(ai_result.get("slippage", "0.5%")),
+        route=ai_result.get("route", f"Uniswap V3 (USDC -> {asset})"),
+        agentRationale=ai_result.get("agentRationale", f"Autonomous proposal generated via {health.get('model')} based on market telemetry."),
+        source=f"AI Agent ({health.get('provider', 'Free Provider')})"
+    )
+
+    return create_proposal(create_req, db)
 
 @app.post("/api/agent/genlayer/submit")
 def submit_to_genlayer(req: SubmitGenLayerRequest, db: Session = Depends(get_db)):

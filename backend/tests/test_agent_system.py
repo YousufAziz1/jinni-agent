@@ -443,3 +443,115 @@ def test_research_score_token_endpoint():
     assert "score" in data["decision"]
     assert "verdict" in data["decision"]
 
+
+# -------------------------------------------------------------
+# 6. Off-Chain AI Provider & Safety Boundary Tests
+# -------------------------------------------------------------
+
+def test_ai_provider_configuration():
+    """Verify AI provider adapter accepts free provider settings."""
+    from ai_provider import AIProviderAdapter
+    adapter = AIProviderAdapter(
+        provider="groq",
+        api_key="test_free_key",
+        model="llama-3.3-70b-versatile",
+        base_url="https://api.groq.com/openai/v1"
+    )
+    health = adapter.health_check()
+    assert health["provider"] == "groq"
+    assert health["model"] == "llama-3.3-70b-versatile"
+    assert health["status"] == "CONNECTED"
+    assert health["apiKeyConfigured"] is True
+
+def test_ai_provider_unconfigured_returns_ai_unavailable():
+    """When no API key is provided and Ollama is unreachable, status must be AI_UNAVAILABLE."""
+    from ai_provider import AIProviderAdapter
+    adapter = AIProviderAdapter(api_key="", ollama_url="http://127.0.0.1:59999/v1")
+    health = adapter.health_check()
+    assert health["status"] == "AI_UNAVAILABLE"
+    assert health["apiKeyConfigured"] is False
+    assert health["model"] == "None"
+
+def test_ai_provider_proposal_fails_gracefully_without_fabrication():
+    """AI proposal generator must NOT fabricate a proposal when AI is unavailable."""
+    from ai_provider import AIProviderAdapter
+    adapter = AIProviderAdapter(api_key="", ollama_url="http://127.0.0.1:59999/v1")
+    res = adapter.generate_agent_proposal(market_telemetry={"asset": "LINK", "price": 15.0})
+    assert res["status"] == "AI_UNAVAILABLE"
+    assert "error" in res
+    assert "actionType" not in res  # Never fabricate a fake trade action
+
+def test_api_generate_ai_proposal_blocks_on_ai_unavailable(monkeypatch):
+    """The /api/agent/proposals/generate-ai endpoint must return HTTP 503 when AI is unavailable."""
+    from main import app
+    from fastapi.testclient import TestClient
+    from ai_provider import ai_provider
+
+    # Force AI unavailable state
+    monkeypatch.setattr(ai_provider, "get_active_client", lambda: (None, "", "AI_UNAVAILABLE"))
+    monkeypatch.setattr(ai_provider, "_is_ollama_reachable", lambda: False)
+    monkeypatch.setattr(ai_provider, "api_key", "")
+
+    client = TestClient(app)
+    res = client.post("/api/agent/proposals/generate-ai", json={"asset": "LINK"})
+    assert res.status_code == 503
+    data = res.json()
+    assert "AI_UNAVAILABLE" in str(data)
+
+def test_ai_proposal_still_requires_policy_evaluation():
+    """Even an AI proposal must strictly undergo deterministic policy evaluation."""
+    from main import app
+    from fastapi.testclient import TestClient
+    from ai_provider import ai_provider
+
+    # Simulate AI proposing a trade that violates policy (e.g. $5,000 when max limit is $500)
+    fake_ai_proposal = {
+        "status": "SUCCESS",
+        "actionType": "BUY",
+        "asset": "LINK",
+        "amount": "333.0",
+        "amountUsd": "5000.0",
+        "slippage": "0.5%",
+        "route": "Uniswap V3 (USDC -> LINK)",
+        "agentRationale": "AI momentum indicator recommends aggressive allocation."
+    }
+
+    dummy_client = object()
+    dummy_health = {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "status": "CONNECTED"
+    }
+
+    import main
+    orig_health = main.ai_provider.health_check
+    orig_gen = main.ai_provider.generate_agent_proposal
+    main.ai_provider.health_check = lambda: dummy_health
+    main.ai_provider.generate_agent_proposal = lambda telemetry, intent: fake_ai_proposal
+
+    try:
+        client = TestClient(app)
+        res = client.post("/api/agent/proposals/generate-ai", json={"asset": "LINK"})
+        assert res.status_code == 200
+        data = res.json()
+        # The proposal was created, but Policy Engine MUST evaluate and FAIL it!
+        assert data["policyResult"] == "FAIL"
+        assert "Exceeds max transaction limit" in (data["policyFailureReason"] or "")
+        # Execution must remain BLOCKED
+        assert data["execution"]["status"] == "BLOCKED"
+    finally:
+        main.ai_provider.health_check = orig_health
+        main.ai_provider.generate_agent_proposal = orig_gen
+
+def test_wallet_analysis_agent_offline_safety():
+    """WalletAnalysisAgent returns conservative bounds when AI provider is unavailable."""
+    from agents import WalletAnalysisAgent
+    from database import get_db
+
+    db = next(get_db())
+    policy = WalletAnalysisAgent.analyze("0x1111111111111111111111111111111111111111", db)
+    assert policy is not None
+    assert policy.get("max_spend_trade") <= 10.0
+    assert policy.get("max_spend_week") <= 50.0
+    assert "reasoning" in policy
+

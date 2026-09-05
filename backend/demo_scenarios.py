@@ -19,7 +19,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
     safe_approved = AgentProposal(
         id="demo-safe-approved-001",
         createdAt=now,
-        source="Venice AI Trading Agent",
+        source="Autonomous Trading Agent",
         actorType="agent",
         originAgentId="agent-jinni-alpha",
         destinationAgentId=None,

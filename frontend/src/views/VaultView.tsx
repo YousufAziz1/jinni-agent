@@ -154,7 +154,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
     }
   };
 
-  // 5. Analyze Wallet via Venice AI
+  // 5. Analyze Wallet via AI Risk Engine
   const handleAnalyzeWallet = async () => {
     if (!address) return;
     setPolicyLoading(true);
@@ -164,7 +164,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
       setMaxSpendTrade(pol.max_spend_trade.toString());
       setMaxSpendWeek(pol.max_spend_week.toString());
       setDurationDays(pol.duration_days.toString());
-      showToast('Venice AI Recommended Spending Policy generated!', 'success');
+      showToast('AI Recommended Spending Policy generated!', 'success');
     } catch (e: any) {
       showToast(e.message || 'Analysis failed', 'error');
     } finally {
@@ -220,7 +220,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
     }
   };
 
-  // 8. Score Token via Venice AI
+  // 8. Score Token via AI Research Engine
   const handleScoreToken = async () => {
     if (!searchSymbol) return;
     setResearchLoading(true);
@@ -317,10 +317,10 @@ export const VaultView: React.FC<VaultViewProps> = ({
       {/* Header */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-black font-display text-white">
-          DeFi Vault & Venice AI Core
+          DeFi Vault & Autonomous AI Risk Engine
         </h2>
         <p className="text-xs sm:text-sm text-gray-400 mt-1">
-          Non-custodial Sepolia escrow vault, EIP-712 session approvals, Venice AI risk evaluation, and Uniswap V3 execution.
+          Non-custodial Sepolia escrow vault, EIP-712 session approvals, autonomous AI risk evaluation, and Uniswap V3 execution.
         </p>
       </div>
 
@@ -455,16 +455,16 @@ export const VaultView: React.FC<VaultViewProps> = ({
 
         </div>
 
-        {/* Right Column: Venice AI & Trading Execution (7 cols) */}
+        {/* Right Column: AI Risk Engine & Trading Execution (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
           
-          {/* Card 3: Venice AI Spending Policy */}
+          {/* Card 3: AI Agent Spending Policy */}
           <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-emerald-400" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-white font-display">
-                  EIP-712 Agent Delegation (Venice AI)
+                  EIP-712 Agent Delegation (AI Risk Engine)
                 </h3>
               </div>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -494,7 +494,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 className="py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-white flex items-center justify-center gap-2"
               >
                 <Brain className="w-4 h-4 text-purple-400" />
-                <span>{policyLoading ? 'Evaluating...' : 'Venice AI Recommend'}</span>
+                <span>{policyLoading ? 'Evaluating...' : 'AI Risk Recommend'}</span>
               </button>
 
               {delegationState?.active ? (
@@ -517,7 +517,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
             </div>
           </div>
 
-          {/* Card 4: Venice AI Momentum Research & Swap */}
+          {/* Card 4: AI Momentum Research & Swap */}
           <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-purple-400" />
@@ -542,7 +542,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 disabled={researchLoading}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[var(--accent)] to-purple-600 font-bold text-white text-xs"
               >
-                {researchLoading ? 'Evaluating...' : `Score ${searchSymbol} with Venice AI`}
+                {researchLoading ? 'Evaluating...' : `Score ${searchSymbol} with AI Agent`}
               </button>
             </div>
 

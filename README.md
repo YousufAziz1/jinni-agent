@@ -251,7 +251,7 @@ JINNI Agent provides four deterministic demo fixtures labeled as **`[DEMO FIXTUR
 ## Tech Stack
 
 * **Frontend**: Vite, React 18, TypeScript 5.6, TailwindCSS 3.4, viem 2.21, MetaMask, genlayer-js 1.1.8, Framer Motion, Lucide React.
-* **Backend**: FastAPI, Uvicorn, SQLAlchemy, Web3.py, Pydantic V2, Python 3.12, Venice AI.
+* **Backend**: FastAPI, Uvicorn, SQLAlchemy, Web3.py, Pydantic V2, Python 3.12, Free AI Provider Adapter (Groq / Gemini / Ollama).
 * **Smart Contracts**:
   * GenLayer Intelligent Contract: Python (`py-genlayer:latest`), GenVM on Studionet.
   * EVM Escrow Vault: Solidity 0.8.20 (`JinniDelegator.sol`) on Ethereum Sepolia.
@@ -302,8 +302,14 @@ USDC_ADDRESS=0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
 LINK_ADDRESS=0x779877A7B0D9E8603169DdbD7836e478b4624789
 UNI_ADDRESS=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984
 
-# Venice AI Reasoning Core (Optional)
-VENICE_API_KEY=your_venice_api_key_here
+# Off-Chain AI Provider (Free Cloud Tier: Groq / Gemini, or Local Ollama)
+# Note: Off-chain AI strictly proposes actions. GenLayer independently adjudicates.
+AI_PROVIDER=groq
+AI_API_KEY=your_free_groq_or_gemini_api_key_here
+AI_MODEL=llama-3.3-70b-versatile
+AI_BASE_URL=https://api.groq.com/openai/v1
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.2
 
 # Server Configuration
 DATABASE_URL=sqlite:///./jinni.db
@@ -322,7 +328,8 @@ jinni-agent/
 │   └── deploy_genlayer.py        # GenLayer Deployment & Schema Validator
 ├── backend/
 │   ├── agent_domain.py           # Typed domain models (Pydantic V2)
-│   ├── agents.py                 # Wallet analysis & research agents (Venice AI)
+│   ├── agents.py                 # Wallet analysis & research agents
+│   ├── ai_provider.py            # Free AI provider adapter (Groq / Gemini / Ollama)
 │   ├── config.py                 # Application settings
 │   ├── database.py               # SQLite / SQLAlchemy persistence
 │   ├── demo_scenarios.py         # 4 deterministic demo fixtures
@@ -381,7 +388,7 @@ pnpm --dir frontend run build
 ```
 
 ### Verified Test Results
-* **Core Backend Tests**: **18/18 passed**
+* **Core Backend Tests**: **24/24 passed** (including Policy Engine, Gate, Off-chain AI Provider & Offline Fallbacks)
 * **Live Studionet Adjudication**: **7/7 passed** (Tx: `0xae013f22fbea2affccfd90ddca90c2ad65711001c9b090c3fb955402b31acb4b`)
 * **Frontend Lint**: **0 errors, 0 warnings**
 * **Frontend Build**: **Passed** (Vite production bundle compiled in 3.32s)

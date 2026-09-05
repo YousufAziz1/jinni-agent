@@ -5,7 +5,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    VENICE_API_KEY: str = os.getenv("VENICE_API_KEY", "")
+    # Off-Chain AI Provider Configuration (Free tier: Groq, Gemini via OpenAI-compat, or local Ollama)
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "groq")
+    AI_API_KEY: str = os.getenv("AI_API_KEY", "")
+    AI_MODEL: str = os.getenv("AI_MODEL", "llama-3.3-70b-versatile")
+    AI_BASE_URL: str = os.getenv("AI_BASE_URL", "https://api.groq.com/openai/v1")
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.2")
+
     SEPOLIA_RPC_URL: str = os.getenv("SEPOLIA_RPC_URL", "https://rpc.ankr.com/eth_sepolia/3dd47c69a2032becad5e2671e24b165b34c58d25829db2bd514d86a8f6967d6e")
 
     # Deployed JinniDelegator contract address on Sepolia

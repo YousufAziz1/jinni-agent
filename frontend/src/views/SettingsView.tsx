@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Save, Cpu, Database, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Cpu, Database, AlertTriangle, CheckCircle, Bot, Sparkles } from 'lucide-react';
 import { getStoredGenLayerConfig, saveGenLayerConfig, type GenLayerConfig } from '../lib/genlayer';
 import { API_BASE, setApiBase } from '../lib/api';
+import { agentApi, type AIProviderStatus } from '../lib/agentApi';
 
 interface SettingsViewProps {
   onRefreshStatus: () => void;
@@ -12,6 +13,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
   const [config, setConfig] = useState<GenLayerConfig>(() => getStoredGenLayerConfig());
   const [apiUrl, setApiUrl] = useState<string>(API_BASE);
   const [testing, setTesting] = useState(false);
+  const [aiStatus, setAiStatus] = useState<AIProviderStatus | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  useEffect(() => {
+    loadAiStatus();
+  }, []);
+
+  const loadAiStatus = async () => {
+    setLoadingAi(true);
+    try {
+      const st = await agentApi.getAIStatus();
+      setAiStatus(st);
+    } catch {
+      setAiStatus({
+        provider: 'none',
+        model: 'None',
+        status: 'AI_UNAVAILABLE',
+        apiKeyConfigured: false,
+        ollamaAvailable: false,
+        message: 'Could not fetch AI status from backend API.'
+      });
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const isConfigured = Boolean(
     config.contractAddress &&
@@ -200,6 +226,77 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
               <span className="text-[11px] text-gray-500 mt-1 block">
                 Local development default: http://localhost:8000/api
               </span>
+            </div>
+          </div>
+
+          {/* Off-Chain AI Provider & Reasoning Engine Section */}
+          <div className="pt-6 border-t border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white font-display">
+                  Off-Chain AI Provider (Proposal & Reasoning)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={loadAiStatus}
+                disabled={loadingAi}
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-medium text-gray-300 hover:text-white"
+              >
+                {loadingAi ? 'Checking...' : 'Refresh AI Status'}
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block mb-1">AI Provider</span>
+                  <span className="text-xs font-bold text-white font-mono capitalize">
+                    {aiStatus ? aiStatus.provider : 'Loading...'}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block mb-1">AI Model</span>
+                  <span className="text-xs font-bold text-white font-mono">
+                    {aiStatus ? aiStatus.model : 'Loading...'}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block mb-1">AI Status</span>
+                  {aiStatus?.status === 'CONNECTED' && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      CONNECTED
+                    </span>
+                  )}
+                  {aiStatus?.status === 'OLLAMA_LOCAL' && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                      OLLAMA_LOCAL
+                    </span>
+                  )}
+                  {(!aiStatus || aiStatus.status === 'AI_UNAVAILABLE') && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <AlertTriangle className="w-3 h-3 text-amber-400" />
+                      AI_UNAVAILABLE
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-gray-400 flex items-start gap-2 pt-1">
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                <span>
+                  {aiStatus?.message || "Checking off-chain AI provider status..."}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/20 text-[11px] text-purple-200/80">
+                <strong>Architectural Note:</strong> The off-chain AI provider (Groq, Gemini, or local Ollama) strictly proposes actions. It has <strong>zero execution authority</strong>. The GenLayer Intelligent Contract on Studionet independently adjudicates every action using on-chain consensus.
+              </div>
             </div>
           </div>
 
