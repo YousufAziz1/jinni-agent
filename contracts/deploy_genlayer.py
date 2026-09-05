@@ -54,7 +54,23 @@ def verify_and_guide_deployment(rpc_url: str, contract_path: str):
     except Exception as e:
         print(f"[Warn] Could not reach RPC at {rpc_url}: {e}")
 
-    # 3. Deployment Instructions
+    # 3. Test Contract Schema Validation on Live Studio RPC
+    try:
+        schema_res = requests.post(
+            rpc_url,
+            json={"jsonrpc": "2.0", "method": "gen_getContractSchemaForCode", "params": [code], "id": 1},
+            timeout=25
+        )
+        schema_data = schema_res.json()
+        if "result" in schema_data and "methods" in schema_data["result"]:
+            methods = list(schema_data["result"]["methods"].keys())
+            print(f"[Pass] Contract schema validated by GenVM. Public methods: {methods}")
+        else:
+            print(f"[Fail] Schema validation failed: {schema_data.get('error')}")
+    except Exception as e:
+        print(f"[Warn] Schema check query failed: {e}")
+
+    # 4. Deployment Instructions
     print("\n" + "=" * 70)
     print("DEPLOYMENT PROCEDURE (GENLAYER STUDIONET / BRADBURY)")
     print("=" * 70)

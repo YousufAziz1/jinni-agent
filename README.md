@@ -193,7 +193,7 @@ Frontend runs at `http://localhost:5173`.
 | `GENLAYER_NETWORK` | GenLayer network identifier | `studionet` |
 | `GENLAYER_CHAIN_ID` | GenLayer network chain ID | `61999` |
 | `GENLAYER_RPC` | GenLayer JSON-RPC endpoint | `https://studio.genlayer.com/api` |
-| `JINNI_AGENT_CONTRACT_ADDRESS` | Deployed `JinniAgentGuard` contract | *(Leave blank for isolated adapter mode)* |
+| `JINNI_AGENT_CONTRACT_ADDRESS` | Deployed `JinniAgentGuard` contract on Studionet | `0xa54cF1bBCfe4456b6194658699aab540fBeF046c` |
 | `GENLAYER_EXPLORER_BASE_URL` | GenLayer Explorer URL | `https://explorer-studio.genlayer.com` |
 | `SEPOLIA_RPC_URL` | Ethereum Sepolia RPC URL | `https://rpc.ankr.com/eth_sepolia/...` |
 | `DELEGATOR_CONTRACT_ADDRESS` | Deployed JinniDelegator on Sepolia | `0x5462D420CEf200c8704Db6b48BE9Db3A000A231C` |
@@ -214,7 +214,7 @@ Frontend runs at `http://localhost:5173`.
 
 ## 11. Known Limitations & Hackathon Status
 
-* **GenLayer Deployment**: When live GenLayer deployment credentials or local simulators are absent, the application operates in **isolated adapter mode** (`CONFIGURATION_BLOCKED`). The contract code ([`contracts/JinniAgentGuard.py`](./contracts/JinniAgentGuard.py)) and deployer ([`contracts/deploy_genlayer.py`](./contracts/deploy_genlayer.py)) are fully implemented and verified against GenLayer specifications.
+* **GenLayer Deployment**: Successfully deployed and verified on **GenLayer Studionet** at address [`0xa54cF1bBCfe4456b6194658699aab540fBeF046c`](https://explorer-studio.genlayer.com/address/0xa54cF1bBCfe4456b6194658699aab540fBeF046c). Real end-to-end consensus transaction verified on Studionet (`0xae013f22fbea2affccfd90ddca90c2ad65711001c9b090c3fb955402b31acb4b`). When unconfigured or offline, the application gracefully operates in isolated adapter mode (`CONFIGURATION_BLOCKED`).
 * **Sepolia Testnet**: Test transactions execute against Sepolia Uniswap V3 mock pairs.
 * **Chain Support Scope**: Active wallet execution is implemented on Ethereum Sepolia (11155111). Support for other L2s (Base, Arbitrum) is part of the future roadmap.
 

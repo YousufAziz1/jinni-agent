@@ -1,3 +1,5 @@
+import os
+import subprocess
 import json
 import time
 import requests
@@ -115,9 +117,34 @@ class GenLayerService:
             "timestamp": now_iso
         }
 
+        # Attempt live submission via genlayer_bridge if contract is configured
+        is_dummy_addr = not settings.JINNI_AGENT_CONTRACT_ADDRESS or settings.JINNI_AGENT_CONTRACT_ADDRESS.replace("0", "").replace("x", "") == ""
+        if settings.JINNI_AGENT_CONTRACT_ADDRESS and not is_dummy_addr:
+            try:
+                bridge_path = os.path.join(os.path.dirname(__file__), "genlayer_bridge.js")
+                cmd = ["node", bridge_path, "submit_proposal", json.dumps(proposal_payload)]
+                env = {**os.environ, "JINNI_AGENT_CONTRACT_ADDRESS": settings.JINNI_AGENT_CONTRACT_ADDRESS}
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45, env=env)
+                if proc.returncode == 0 and proc.stdout.strip():
+                    bridge_res = json.loads(proc.stdout.strip())
+                    tx_hash = bridge_res.get("txHash")
+                    if tx_hash:
+                        return GenLayerResult(
+                            network=settings.GENLAYER_NETWORK,
+                            chainId=settings.GENLAYER_CHAIN_ID,
+                            contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS,
+                            txHash=tx_hash,
+                            txStatus="PENDING",
+                            decision="UNAVAILABLE",
+                            reasoning="Transaction submitted to GenLayer Intelligent Contract on Studionet. Awaiting consensus finalization.",
+                            submittedAt=now_iso,
+                            finalizedAt=None,
+                            telemetry=None
+                        )
+            except Exception as bridge_err:
+                pass
+
         # In GenLayer Node JSON-RPC, simulation/read calls use gen_call.
-        # Direct write transactions require a signed eth_sendRawTransaction from client.
-        # When calling backend endpoint, we invoke gen_call to evaluate consensus preflight
         rpc_payload = {
             "jsonrpc": "2.0",
             "method": "gen_call",
@@ -233,8 +260,13 @@ class GenLayerService:
                     telemetry=None
                 )
 
-            status_info = data.get("result", {})
-            raw_status = status_info.get("status", "Pending")
+            res_data = data.get("result")
+            if isinstance(res_data, str):
+                raw_status = res_data
+            elif isinstance(res_data, dict):
+                raw_status = res_data.get("status", "Pending")
+            else:
+                raw_status = "Pending"
             status_upper = raw_status.upper()
 
             mapped_tx_status = (
@@ -249,28 +281,18 @@ class GenLayerService:
             reasoning = f"Transaction consensus status: {raw_status}."
 
             if mapped_tx_status in ["ACCEPTED", "FINALIZED"] and settings.JINNI_AGENT_CONTRACT_ADDRESS:
-                # Query contract for stored decision
-                read_payload = {
-                    "jsonrpc": "2.0",
-                    "method": "gen_call",
-                    "params": [{
-                        "type": "read",
-                        "to": settings.JINNI_AGENT_CONTRACT_ADDRESS,
-                        "data": proposal_id
-                    }],
-                    "id": 2
-                }
+                # Query contract for stored decision via genlayer_bridge
                 try:
-                    read_res = requests.post(settings.GENLAYER_RPC, json=read_payload, timeout=8)
-                    read_data = read_res.json()
-                    out_raw = read_data.get("result", {}).get("data")
-                    if out_raw:
-                        if isinstance(out_raw, str) and (out_raw.startswith("{") or "decision" in out_raw):
-                            parsed = json.loads(out_raw)
-                            dec_str = parsed.get("decision", "").upper()
-                            if dec_str in ["APPROVE", "REJECT", "DISPUTE", "INSUFFICIENT_DATA"]:
-                                decision = dec_str
-                            reasoning = parsed.get("reasoning", reasoning)
+                    bridge_path = os.path.join(os.path.dirname(__file__), "genlayer_bridge.js")
+                    cmd = ["node", bridge_path, "read_decision", proposal_id]
+                    env = {**os.environ, "JINNI_AGENT_CONTRACT_ADDRESS": settings.JINNI_AGENT_CONTRACT_ADDRESS}
+                    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=12, env=env)
+                    if proc.returncode == 0 and proc.stdout.strip():
+                        parsed = json.loads(proc.stdout.strip())
+                        dec_str = parsed.get("decision", "").upper()
+                        if dec_str in ["APPROVE", "REJECT", "DISPUTE", "INSUFFICIENT_DATA"]:
+                            decision = dec_str
+                        reasoning = parsed.get("reasoning", reasoning)
                 except Exception:
                     pass
 
