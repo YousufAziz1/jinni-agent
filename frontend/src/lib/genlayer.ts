@@ -15,7 +15,7 @@ export function getStoredGenLayerConfig(): GenLayerConfig {
     network: "studionet",
     chainId: 61999,
     rpcUrl: "https://studio.genlayer.com/api",
-    contractAddress: "",
+    contractAddress: "0xa54cF1bBCfe4456b6194658699aab540fBeF046c",
     explorerBaseUrl: "https://explorer-studio.genlayer.com"
   };
 

@@ -1,4 +1,9 @@
 export let API_BASE = (() => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL
+  if (envUrl && envUrl.trim() !== '') {
+    return envUrl.trim()
+  }
+
   const saved = localStorage.getItem('JINNI_API_URL')
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   
