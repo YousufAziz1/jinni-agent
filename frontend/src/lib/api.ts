@@ -1,34 +1,71 @@
-export let API_BASE = (() => {
+export const DEFAULT_PRODUCTION_BACKEND = 'https://jinni-agent.onrender.com/api';
+export const DEFAULT_LOCAL_BACKEND = 'http://localhost:8000/api';
+
+/**
+ * Normalizes an API base URL to ensure proper protocol, trimmed path, and guaranteed `/api` prefix.
+ */
+export function normalizeApiBase(rawUrl?: string | null): string {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return '';
+  }
+  let trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  // Remove trailing slashes
+  trimmed = trimmed.replace(/\/+$/, '');
+
+  // If it's a relative path starting with /api, keep it
+  if (trimmed === '/api' || trimmed.startsWith('/api/')) {
+    return trimmed.replace(/\/+$/, '');
+  }
+
+  // If it already ends with '/api', return it
+  if (trimmed.endsWith('/api')) {
+    return trimmed;
+  }
+
+  // Otherwise, ensure '/api' is appended
+  return `${trimmed}/api`;
+}
+
+/**
+ * Resolves the active API base URL using Vite environment variables, localStorage overrides,
+ * and intelligent localhost vs production fallback.
+ */
+export function resolveApiBase(): string {
   try {
-    const envUrl = (import.meta as any).env?.VITE_API_URL
-    if (envUrl && envUrl.trim() !== '') {
-      return envUrl.trim()
+    const envUrl = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_API_BASE_URL;
+    if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+      return normalizeApiBase(envUrl);
     }
   } catch {}
 
-  const hasWindow = typeof window !== 'undefined'
-  const saved = hasWindow && window.localStorage ? window.localStorage.getItem('JINNI_API_URL') : null
-  const isLocalhost = hasWindow ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') : true
+  const hasWindow = typeof window !== 'undefined';
+  const saved = hasWindow && window.localStorage ? window.localStorage.getItem('JINNI_API_URL') : null;
+  const isLocalhost = hasWindow ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') : true;
   
-  if (saved) {
+  if (saved && saved.trim() !== '') {
     if (!isLocalhost && saved.includes('localhost')) {
       if (hasWindow && window.localStorage) {
-        window.localStorage.removeItem('JINNI_API_URL')
+        window.localStorage.removeItem('JINNI_API_URL');
       }
-      return 'https://jinni-6wfe.onrender.com/api'
+      return DEFAULT_PRODUCTION_BACKEND;
     }
-    return saved.trim()
+    return normalizeApiBase(saved);
   }
   
-  return isLocalhost ? 'http://localhost:8000/api' : 'https://jinni-6wfe.onrender.com/api'
-})().trim()
+  return isLocalhost ? DEFAULT_LOCAL_BACKEND : DEFAULT_PRODUCTION_BACKEND;
+}
+
+export let API_BASE = resolveApiBase();
 
 export const setApiBase = (url: string) => {
+  const normalized = normalizeApiBase(url);
   if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.setItem('JINNI_API_URL', url.trim())
+    window.localStorage.setItem('JINNI_API_URL', normalized);
   }
-  API_BASE = url.trim()
-}
+  API_BASE = normalized;
+};
 
 export interface WalletPolicy {
   max_spend_trade: number

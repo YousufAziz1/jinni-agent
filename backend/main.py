@@ -213,17 +213,32 @@ class GenerateAIProposalRequest(BaseModel):
 # JINNI Agent Endpoints
 # =============================================================
 
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint for production verification, uptime monitors, and load balancers."""
+    return {
+        "status": "healthy",
+        "service": "JINNI Agent API",
+        "version": "2.0.0",
+        "genlayer_configured": GenLayerService.get_status().get("configured", False),
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+
 @app.get("/api/agent/ai/status")
+@app.get("/agent/ai/status")
 def get_ai_status():
     """Returns truthful health & status of the off-chain AI provider."""
     return ai_provider.health_check()
 
 @app.get("/api/agent/genlayer/status")
+@app.get("/agent/genlayer/status")
 def get_genlayer_status():
     """Returns GenLayer integration status and connectivity."""
     return GenLayerService.get_status()
 
 @app.get("/api/agent/policies")
+@app.get("/agent/policies")
 def get_policies(db: Session = Depends(get_db)):
     """Retrieves active policy rule configuration."""
     pol = db.query(PolicyModel).filter(PolicyModel.is_active == True).first()
@@ -267,6 +282,7 @@ def get_policies(db: Session = Depends(get_db)):
     )
 
 @app.post("/api/agent/policies")
+@app.post("/agent/policies")
 def update_policy(req: UpdatePolicyRequest, db: Session = Depends(get_db)):
     """Updates active policy rules."""
     pol = db.query(PolicyModel).filter(PolicyModel.is_active == True).first()
@@ -307,6 +323,7 @@ def update_policy(req: UpdatePolicyRequest, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Policy rules updated"}
 
 @app.post("/api/agent/policy/evaluate")
+@app.post("/agent/policy/evaluate")
 def evaluate_proposal_policy(proposal: AgentProposal, db: Session = Depends(get_db)):
     """Evaluates a proposal against active policy configuration."""
     policy_config = get_policies(db)
@@ -318,6 +335,7 @@ def evaluate_proposal_policy(proposal: AgentProposal, db: Session = Depends(get_
     }
 
 @app.post("/api/agent/proposals")
+@app.post("/agent/proposals")
 def create_proposal(req: CreateProposalRequest, db: Session = Depends(get_db)):
     """
     Creates an Agent Proposal, automatically gathers evidence, runs policy evaluation,
@@ -409,9 +427,13 @@ def create_proposal(req: CreateProposalRequest, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    return proposal
+    prop_dict = proposal.model_dump() if hasattr(proposal, "model_dump") else proposal.dict()
+    res_dict = dict(prop_dict)
+    res_dict["proposal"] = prop_dict
+    return res_dict
 
 @app.post("/api/agent/proposals/generate-ai")
+@app.post("/agent/proposals/generate-ai")
 def generate_ai_proposal(req: GenerateAIProposalRequest, db: Session = Depends(get_db)):
     """
     Autonomously generates an agent proposal using the configured free AI provider or local Ollama.
@@ -497,6 +519,7 @@ def submit_to_genlayer(req: SubmitGenLayerRequest, db: Session = Depends(get_db)
     return proposal
 
 @app.get("/api/agent/proposals")
+@app.get("/agent/proposals")
 def list_proposals(
     status: Optional[str] = None,
     include_demo: bool = True,
@@ -524,6 +547,7 @@ def list_proposals(
     return results
 
 @app.get("/api/agent/proposals/{proposal_id}")
+@app.get("/agent/proposals/{proposal_id}")
 def get_proposal_detail(proposal_id: str, db: Session = Depends(get_db)):
     """Retrieves single proposal detail."""
     p_model = db.query(ProposalModel).filter(ProposalModel.id == proposal_id).first()
@@ -532,6 +556,7 @@ def get_proposal_detail(proposal_id: str, db: Session = Depends(get_db)):
     return proposal_to_domain(p_model)
 
 @app.post("/api/agent/execute")
+@app.post("/agent/execute")
 def execute_proposal(req: ExecuteProposalRequest, db: Session = Depends(get_db)):
     """
     Enforces execution gate rules and records execution result.
@@ -640,12 +665,14 @@ def execute_proposal(req: ExecuteProposalRequest, db: Session = Depends(get_db))
     }
 
 @app.get("/api/agent/decision-proofs")
+@app.get("/agent/decision-proofs")
 def list_decision_proofs(db: Session = Depends(get_db)):
     """Retrieves all generated Decision Proofs."""
     proofs = db.query(DecisionProofModel).all()
     return [proof_to_domain(p) for p in proofs]
 
 @app.get("/api/agent/decision-proofs/{proposal_id}")
+@app.get("/agent/decision-proofs/{proposal_id}")
 def get_decision_proof(proposal_id: str, db: Session = Depends(get_db)):
     """Retrieves specific Decision Proof."""
     proof = db.query(DecisionProofModel).filter(DecisionProofModel.proposal_id == proposal_id).first()
@@ -654,6 +681,7 @@ def get_decision_proof(proposal_id: str, db: Session = Depends(get_db)):
     return proof_to_domain(proof)
 
 @app.get("/api/agent/activity")
+@app.get("/agent/activity")
 def get_agent_activity(db: Session = Depends(get_db)):
     """Retrieves agent-specific activity history with real counts."""
     logs = db.query(ActivityLog).order_by(ActivityLog.timestamp.desc()).limit(100).all()

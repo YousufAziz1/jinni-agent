@@ -256,14 +256,25 @@ export default function App() {
     agentRationale: string;
   }) => {
     setLoading(true);
+    // Unselect stale demo proposal so a failed submission does not leave a demo selected
+    setActiveProposal(null);
     try {
-      const newProp = await agentApi.createProposal(params);
+      const newProp = await agentApi.createProposal({
+        ...params,
+        chain: 'Sepolia',
+        chainId: 11155111,
+        actorType: 'human'
+      });
+      // Explicitly mark as live proposal
+      newProp.isDemo = false;
       setActiveProposal(newProp);
       setProposals(prev => [newProp, ...prev.filter(p => p.id !== newProp.id)]);
       showToast(`Proposal ${newProp.id} created! Policy: ${newProp.policyResult}`, 'success');
       await refreshAppData();
     } catch (e: any) {
-      showToast(e.message || 'Failed to create proposal', 'error');
+      console.error("[App] Proposal creation error:", e);
+      const errMsg = e.message || 'Failed to create proposal';
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }

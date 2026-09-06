@@ -36,6 +36,29 @@ export interface ActivityLogItem {
   tx_hash?: string | null;
 }
 
+export type ProposalErrorCode =
+  | 'PROPOSAL_API_NOT_CONFIGURED'
+  | 'PROPOSAL_ROUTE_NOT_FOUND'
+  | 'PROPOSAL_VALIDATION_FAILED'
+  | 'POLICY_EVALUATION_FAILED'
+  | 'GENLAYER_NOT_CONFIGURED'
+  | 'WALLET_NOT_CONNECTED'
+  | 'WRONG_NETWORK'
+  | 'NETWORK_REQUEST_FAILED'
+  | 'PROPOSAL_PERSISTENCE_FAILED';
+
+export class ProposalApiError extends Error {
+  code: ProposalErrorCode;
+  statusCode?: number;
+
+  constructor(code: ProposalErrorCode, message: string, statusCode?: number) {
+    super(message);
+    this.name = 'ProposalApiError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
 export const agentApi = {
   async getGenLayerStatus(): Promise<BackendAgentStatus> {
     const res = await fetch(`${API_BASE}/agent/genlayer/status`);
@@ -88,17 +111,100 @@ export const agentApi = {
     route: string;
     agentRationale: string;
     source?: string;
+    actorType?: string;
+    originAgentId?: string | null;
+    destinationAgentId?: string | null;
+    chainId?: number;
+    chain?: string;
   }): Promise<AgentProposal> {
-    const res = await fetch(`${API_BASE}/agent/proposals`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params)
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Proposal creation failed" }));
-      throw new Error(err.detail || "Proposal creation failed");
+    const payload = {
+      actionType: params.actionType,
+      asset: params.asset,
+      chain: params.chain || "Sepolia",
+      chainId: params.chainId || 11155111,
+      amount: params.amount,
+      amountUsd: params.amountUsd,
+      slippage: params.slippage,
+      route: params.route,
+      agentRationale: params.agentRationale,
+      source: params.source || "AI Agent",
+      actorType: params.actorType || "agent",
+      originAgentId: params.originAgentId !== undefined ? params.originAgentId : "jinni-agent-core",
+      destinationAgentId: params.destinationAgentId || null
+    };
+
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/agent/proposals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (networkErr: any) {
+      console.error("[agentApi] Network request failed:", networkErr);
+      throw new ProposalApiError(
+        'NETWORK_REQUEST_FAILED',
+        'Proposal service is not reachable. Check backend deployment and connection.',
+        0
+      );
     }
-    return res.json();
+
+    if (!res.ok) {
+      let errDetail: string;
+      try {
+        const errJson = await res.json();
+        errDetail = errJson.detail || errJson.message || errJson.error || '';
+      } catch {
+        errDetail = await res.text().catch(() => '');
+      }
+
+      console.error(`[agentApi] Proposal creation failed HTTP ${res.status}:`, errDetail);
+
+      if (res.status === 404) {
+        throw new ProposalApiError(
+          'PROPOSAL_ROUTE_NOT_FOUND',
+          'The proposal API route was not found. Check the production backend URL and deployment rewrite.',
+          404
+        );
+      }
+      if (res.status === 422) {
+        throw new ProposalApiError(
+          'PROPOSAL_VALIDATION_FAILED',
+          `Validation failed: ${errDetail || 'check amount, slippage, and asset bounds.'}`,
+          422
+        );
+      }
+      if (res.status === 500) {
+        throw new ProposalApiError(
+          'POLICY_EVALUATION_FAILED',
+          `Policy could not be evaluated because server encountered an error. ${errDetail || 'The proposal is blocked.'}`,
+          500
+        );
+      }
+      if (res.status === 503) {
+        throw new ProposalApiError(
+          'GENLAYER_NOT_CONFIGURED',
+          `GenLayer service unavailable: ${errDetail || 'Please check contract configuration.'}`,
+          503
+        );
+      }
+
+      throw new ProposalApiError(
+        'PROPOSAL_PERSISTENCE_FAILED',
+        errDetail || `Proposal creation failed (HTTP ${res.status})`,
+        res.status
+      );
+    }
+
+    const data = await res.json();
+    const proposal: AgentProposal = data.proposal || data;
+    if (!proposal || !proposal.id) {
+      throw new ProposalApiError(
+        'PROPOSAL_PERSISTENCE_FAILED',
+        'Malformed proposal response returned from backend service.'
+      );
+    }
+    return proposal;
   },
 
   async submitToGenLayer(proposalId: string): Promise<AgentProposal> {
@@ -115,11 +221,19 @@ export const agentApi = {
   },
 
   async listProposals(status?: string, includeDemo: boolean = true): Promise<AgentProposal[]> {
-    const url = new URL(`${API_BASE}/agent/proposals`);
-    if (status) url.searchParams.set("status", status);
-    url.searchParams.set("include_demo", String(includeDemo));
+    let fetchUrl: string;
+    try {
+      const url = new URL(`${API_BASE}/agent/proposals`, window.location.origin);
+      if (status) url.searchParams.set("status", status);
+      url.searchParams.set("include_demo", String(includeDemo));
+      fetchUrl = url.toString();
+    } catch {
+      const query = new URLSearchParams({ include_demo: String(includeDemo) });
+      if (status) query.set("status", status);
+      fetchUrl = `${API_BASE}/agent/proposals?${query.toString()}`;
+    }
 
-    const res = await fetch(url.toString());
+    const res = await fetch(fetchUrl);
     if (!res.ok) throw new Error("Failed to load proposals");
     return res.json();
   },

@@ -99,16 +99,55 @@ export const AgentView: React.FC<AgentViewProps> = ({
     }
   };
 
+  const [formValidationError, setFormValidationError] = useState<string | null>(null);
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormValidationError(null);
+
+    const validActions = ['BUY', 'SELL', 'SWAP', 'PAY', 'SERVICE_PAYMENT', 'CONTRACT_INTERACTION'];
+    if (!validActions.includes(actionType)) {
+      setFormValidationError(`Unsupported action type: ${actionType}`);
+      return;
+    }
+
+    const numAmount = parseFloat(amount.trim());
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setFormValidationError("Trade amount must be a valid positive number greater than zero.");
+      return;
+    }
+
+    const numUsd = parseFloat(amountUsd.trim());
+    if (isNaN(numUsd) || numUsd < 0) {
+      setFormValidationError("Est. Value (USD) must be a non-negative number.");
+      return;
+    }
+
+    const cleanSlippage = slippage.replace('%', '').trim();
+    const numSlippage = parseFloat(cleanSlippage);
+    if (isNaN(numSlippage) || numSlippage < 0 || numSlippage > 50) {
+      setFormValidationError("Max slippage must be a valid percentage between 0% and 50%.");
+      return;
+    }
+
+    if (!route || route.trim() === '') {
+      setFormValidationError("Execution route is required for trade proposals.");
+      return;
+    }
+
+    if (!rationale || rationale.trim().length < 8) {
+      setFormValidationError("Agent rationale must be provided (minimum 8 characters) explaining trade justification.");
+      return;
+    }
+
     await onCreateProposal({
       actionType,
       asset,
-      amount,
-      amountUsd,
-      slippage,
-      route,
-      agentRationale: rationale
+      amount: amount.trim(),
+      amountUsd: amountUsd.trim(),
+      slippage: `${cleanSlippage}%`,
+      route: route.trim(),
+      agentRationale: rationale.trim()
     });
   };
 
@@ -313,21 +352,38 @@ export const AgentView: React.FC<AgentViewProps> = ({
               />
             </div>
 
+            {formValidationError && (
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{formValidationError}</span>
+              </div>
+            )}
+
             <button
               id="create-proposal-btn"
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[var(--accent)] to-purple-600 hover:opacity-90 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[var(--accent)] to-purple-600 hover:opacity-90 font-bold text-white shadow-lg shadow-[var(--accent)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{loading ? "Evaluating Policy..." : "Propose & Evaluate Policy"}</span>
+              <span>{loading ? "Evaluating Policy on Server..." : "Propose & Evaluate Policy"}</span>
             </button>
           </form>
         </div>
 
         {/* Right Column: Active Proposal Pipeline & Actions (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {activeProposal ? (
+          {loading ? (
+            <div className="p-8 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4 text-center">
+              <div className="inline-flex p-4 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] animate-spin">
+                <RefreshCw className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-bold text-white">Synthesizing Proposal & Evaluating Policy...</h3>
+              <p className="text-xs text-gray-400 max-w-md mx-auto">
+                Verifying risk parameters, oracle price feeds, and Sepolia liquidity depths with backend policy engine.
+              </p>
+            </div>
+          ) : activeProposal ? (
             <div className="space-y-6">
               
               {/* Pipeline Tracker */}
@@ -340,9 +396,13 @@ export const AgentView: React.FC<AgentViewProps> = ({
                     Execution Gate & Adjudication Controls
                   </h4>
                   <div className="flex items-center gap-2">
-                    {isDemo && (
+                    {isDemo ? (
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300">
-                        DEMO FIXTURE
+                        DEMO FIXTURE — NOT A LIVE TRANSACTION
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                        LIVE PROPOSAL
                       </span>
                     )}
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${

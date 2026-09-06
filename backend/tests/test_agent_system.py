@@ -611,4 +611,55 @@ def test_load_demo_scenarios_endpoint_all_four():
     bad_res = client.post("/api/agent/demo-scenarios/load?scenario_id=demo-nonexistent-999")
     assert bad_res.status_code == 404
 
+def test_health_endpoints_production_ready():
+    """Verify health endpoints exist on both /health and /api/health."""
+    from main import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    for path in ["/health", "/api/health"]:
+        res = client.get(path)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "healthy"
+        assert "service" in data
+
+def test_proposal_creation_and_alias_routes():
+    """Verify proposal creation works on both /api/agent/proposals and /agent/proposals."""
+    from main import app
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    payload = {
+        "actionType": "BUY",
+        "asset": "LINK",
+        "chain": "Sepolia",
+        "chainId": 11155111,
+        "amount": "1.0",
+        "amountUsd": "15.0",
+        "slippage": "0.5%",
+        "route": "Uniswap V3 (USDC -> LINK)",
+        "agentRationale": "Technical indicator support test.",
+        "actorType": "human"
+    }
+
+    # Test primary endpoint
+    res = client.post("/api/agent/proposals", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "proposal" in data
+    assert data["isDemo"] is False
+    assert data["proposal"]["isDemo"] is False
+    assert data["execution"]["txHash"] is None
+    assert data["policyResult"] == "PASS"
+
+    # Test alias route /agent/proposals
+    res_alias = client.post("/agent/proposals", json=payload)
+    assert res_alias.status_code == 200
+    data_alias = res_alias.json()
+    assert "proposal" in data_alias
+    assert data_alias["isDemo"] is False
+    assert data_alias["proposal"]["isDemo"] is False
+
+
 
