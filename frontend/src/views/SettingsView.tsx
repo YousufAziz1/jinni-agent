@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Cpu, AlertTriangle, Sparkles, Database, Bot } from 'lucide-react';
+import { Save, Cpu, AlertTriangle, Sparkles, Database, Bot, Sun, Moon } from 'lucide-react';
 import { getStoredGenLayerConfig, saveGenLayerConfig, type GenLayerConfig } from '../lib/genlayer';
 import { API_BASE, setApiBase } from '../lib/api';
 import { agentApi, type AIProviderStatus } from '../lib/agentApi';
@@ -11,9 +11,17 @@ interface SettingsViewProps {
   onRefreshStatus: () => void;
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
   capability?: RuntimeCapability;
+  theme?: 'dark' | 'light';
+  onThemeChange?: (theme: 'dark' | 'light') => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, showToast, capability }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ 
+  onRefreshStatus, 
+  showToast, 
+  capability,
+  theme = 'dark',
+  onThemeChange 
+}) => {
   const [config, setConfig] = useState<GenLayerConfig>(() => getStoredGenLayerConfig());
   const [apiUrl, setApiUrl] = useState<string>(API_BASE);
   const [testing, setTesting] = useState(false);
@@ -95,6 +103,75 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onRefreshStatus, sho
 
       {/* Prominent Live Status Strip */}
       {capability && <RuntimeCapabilityBar capability={capability} />}
+
+      {/* Appearance & Theme (Day / Night Mode) Panel */}
+      <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            {theme === 'dark' ? <Moon className="w-5 h-5 text-purple-400" /> : <Sun className="w-5 h-5 text-amber-500" />}
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white font-display">
+              Appearance & Theme (Day / Night Mode)
+            </h3>
+          </div>
+          <span className="text-[10px] font-mono text-gray-400">
+            Current: {theme === 'dark' ? 'Night (Dark)' : 'Day (Light)'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Night Mode Option */}
+          <button
+            type="button"
+            onClick={() => onThemeChange && onThemeChange('dark')}
+            className={`flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
+              theme === 'dark'
+                ? 'bg-purple-600/15 border-purple-500/50 shadow-lg shadow-purple-500/10'
+                : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className={`p-3 rounded-xl flex-shrink-0 ${theme === 'dark' ? 'bg-purple-600 text-white' : 'bg-white/5 text-gray-400'}`}>
+              <Moon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">Night Mode (Dark)</span>
+                {theme === 'dark' && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">ACTIVE</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Deep space midnight backdrop with neon glowing accents and glassmorphism. Optimized for low-light environments.
+              </p>
+            </div>
+          </button>
+
+          {/* Day Mode Option */}
+          <button
+            type="button"
+            onClick={() => onThemeChange && onThemeChange('light')}
+            className={`flex items-start gap-4 p-4 rounded-2xl border text-left transition-all ${
+              theme === 'light'
+                ? 'bg-blue-600/15 border-blue-500/50 shadow-lg shadow-blue-500/10'
+                : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className={`p-3 rounded-xl flex-shrink-0 ${theme === 'light' ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400'}`}>
+              <Sun className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">Day Mode (Light)</span>
+                {theme === 'light' && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">ACTIVE</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Crisp daylight palette with clean white surfaces, subtle slate grid, and electric royal blue branding.
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
 
       {/* System Capability Breakdown Panel */}
       <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl space-y-4 text-xs">

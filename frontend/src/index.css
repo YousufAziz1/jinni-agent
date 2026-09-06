@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root, .dark, [data-theme="dark"] {
   /* Backgrounds */
   --bg-base:       #050508;
   --bg-surface:    #0a0a0f;
@@ -28,17 +28,170 @@
   --error:         #ef4444;
 }
 
+.light, [data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:       #f8fafc; /* Crisp Slate-50 */
+  --bg-surface:    #ffffff; /* Pure White */
+  --bg-elevated:   #f1f5f9; /* Slate-100 */
+
+  /* Borders */
+  --border-subtle: #e2e8f0; /* Slate-200 */
+  --border-active: rgba(0, 98, 255, 0.5);
+
+  /* Brand */
+  --accent:        #0052e0; /* Deep Electric Royal Blue */
+  --accent-2:      #059669; /* Rich Emerald */
+  --accent-glow:   rgba(0, 98, 255, 0.12);
+
+  /* Text */
+  --text-primary:  #0f172a; /* Slate-900 */
+  --text-muted:    #64748b; /* Slate-500 */
+  --text-faint:    #94a3b8; /* Slate-400 */
+
+  /* Status */
+  --success:       #10b981;
+  --warning:       #d97706;
+  --error:         #dc2626;
+}
+
 @layer base {
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
     letter-spacing: -0.02em;
   }
+}
+
+/* Light (Day) Mode Structural & Utility Overrides */
+.light body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.light .bg-mesh {
+  background:
+    radial-gradient(ellipse 60% 60% at 20% -20%, rgba(0, 82, 224, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 120%, rgba(147, 51, 234, 0.06) 0%, transparent 60%),
+    #f8fafc !important;
+}
+
+.light .bg-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px) !important;
+  background-size: 48px 48px;
+}
+
+.light .bg-black\/40,
+.light .bg-black\/60,
+.light .bg-black\/70 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03) !important;
+}
+
+.light header.border-b {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+}
+
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/15,
+.light .border-white\/20 {
+  border-color: rgba(226, 232, 240, 0.95) !important;
+}
+
+.light .bg-white\/5,
+.light .bg-white\/\[0\.03\] {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+.light .bg-white\/10 {
+  background-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+.light .bg-white\/15 {
+  background-color: rgba(203, 213, 225, 0.95) !important;
+}
+
+.light .text-white {
+  color: #0f172a !important;
+}
+
+.light .text-gray-100 {
+  color: #1e293b !important;
+}
+
+.light .text-gray-200 {
+  color: #334155 !important;
+}
+
+.light .text-gray-300 {
+  color: #475569 !important;
+}
+
+.light .text-gray-400 {
+  color: #64748b !important;
+}
+
+.light .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+/* Ensure vibrant CTA and colored buttons preserve crisp white text in Light Mode */
+.light .bg-gradient-to-r,
+.light .bg-gradient-to-tr,
+.light .bg-\[var\(--accent\)\],
+.light .bg-purple-600,
+.light .bg-purple-700,
+.light .bg-emerald-500,
+.light .bg-emerald-600,
+.light .bg-rose-500,
+.light .bg-rose-600,
+.light .bg-blue-600,
+.light .btn-primary {
+  color: #ffffff !important;
+}
+
+.light .bg-gradient-to-r *,
+.light .bg-gradient-to-tr *,
+.light .bg-\[var\(--accent\)\] *,
+.light .bg-purple-600 *,
+.light .bg-purple-700 *,
+.light .bg-emerald-500 *,
+.light .bg-emerald-600 *,
+.light .bg-rose-500 *,
+.light .bg-rose-600 *,
+.light .bg-blue-600 *,
+.light .btn-primary * {
+  color: #ffffff !important;
+}
+
+/* Light Mode inputs & forms */
+.light input,
+.light select,
+.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Modals & Backdrop */
+.light .bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
 }
 
 /* Background Animations */

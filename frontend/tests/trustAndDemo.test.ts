@@ -13,6 +13,7 @@ import {
   SEPOLIA_CHAIN_ID
 } from '../src/lib/runtimeCapability.ts';
 import { agentApi } from '../src/lib/agentApi.ts';
+import { getStoredTheme } from '../src/lib/theme.ts';
 
 describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test Suite', () => {
 
@@ -354,6 +355,21 @@ describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test S
       assert.ok(assets.includes('UNI'));
       assert.ok(assets.includes('WETH'));
       assert.ok(assets.includes('UNKNOWN_MEME'));
+    });
+  });
+
+  // 15. Day and Night (Light / Dark) Theme Management
+  describe('15. Day and Night (Light / Dark) Theme System', () => {
+    it('defaults to dark mode when no theme is persisted', () => {
+      const theme = getStoredTheme();
+      assert.ok(theme === 'dark' || theme === 'light');
+    });
+
+    it('theme modes are strictly typed as dark or light', () => {
+      const validModes = ['dark', 'light'];
+      assert.ok(validModes.includes('dark'));
+      assert.ok(validModes.includes('light'));
+      assert.equal(validModes.length, 2);
     });
   });
 

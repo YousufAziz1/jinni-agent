@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   Vault,
-  Network
+  Network,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { switchToSepolia } from '../lib/web3';
 
@@ -34,6 +36,8 @@ interface NavbarProps {
   genlayerConfigured: boolean;
   sepoliaConnected: boolean;
   walletChainId?: number | null;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -43,7 +47,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   walletConnected,
   onConnectWallet,
   genlayerConfigured,
-  walletChainId
+  walletChainId,
+  theme = 'dark',
+  onToggleTheme
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -189,6 +195,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
+            {/* Day / Night Theme Toggle */}
+            {onToggleTheme && (
+              <button
+                id="theme-toggle-btn"
+                onClick={onToggleTheme}
+                className="flex items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-all shadow-sm"
+                title={theme === 'dark' ? "Switch to Day Mode (Light)" : "Switch to Night Mode (Dark)"}
+                aria-label={theme === 'dark' ? "Switch to Day Mode" : "Switch to Night Mode"}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400 animate-pulse" />
+                ) : (
+                  <Moon className="w-4 h-4 text-purple-600" />
+                )}
+              </button>
+            )}
+
             {/* Mobile / Tablet Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -203,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Mobile / Narrow Screen Navigation Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="xl:hidden py-4 border-t border-white/10 animate-fadeIn space-y-2">
+          <div className="xl:hidden py-4 border-t border-white/10 animate-fadeIn space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
               {coreTabs.map((tab) => (
                 <button
@@ -238,6 +261,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>DeFi Vault</span>
               </button>
             </div>
+
+            {/* Mobile Theme Switcher Row */}
+            {onToggleTheme && (
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between px-1">
+                <span className="text-xs text-gray-400 font-medium">Appearance (Day/Night)</span>
+                <button
+                  onClick={onToggleTheme}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold transition-all"
+                >
+                  {theme === 'dark' ? (
+                    <>
+                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Day Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Night Mode</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

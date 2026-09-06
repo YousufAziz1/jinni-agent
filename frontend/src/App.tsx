@@ -18,6 +18,7 @@ import {
   createDecisionProofFromProposal 
 } from './lib/demoScenarios';
 import { getRuntimeCapability, type RuntimeCapability } from './lib/runtimeCapability';
+import { useTheme } from './lib/theme';
 import type { 
   AgentProposal, 
   DecisionProof, 
@@ -39,6 +40,9 @@ import { VaultView } from './views/VaultView';
 import { SettingsView } from './views/SettingsView';
 
 export default function App() {
+  // Theme State (Day / Night Mode)
+  const { theme, toggleTheme, setTheme } = useTheme();
+
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>('overview');
 
@@ -432,6 +436,8 @@ export default function App() {
         genlayerConfigured={genlayerConfigured}
         sepoliaConnected={sepoliaConnected}
         walletChainId={walletChainId}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main App Body */}
@@ -521,6 +527,8 @@ export default function App() {
             onRefreshStatus={refreshAppData}
             showToast={showToast}
             capability={capability}
+            theme={theme}
+            onThemeChange={setTheme}
           />
         )}
 
