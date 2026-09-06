@@ -71,13 +71,13 @@ def get_demo_scenarios() -> List[AgentProposal]:
         genlayer=GenLayerResult(
             network="studionet",
             chainId=61999,
-            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-            txHash="0xd3m0_fixture_approved_tx_hash_00000000000000000000000000000000001",
-            txStatus="FINALIZED",
+            contractAddress=None,
+            txHash=None,
+            txStatus="NOT_APPLICABLE",
             decision="APPROVE",
             reasoning="[DEMO FIXTURE] GenLayer adjudication simulation: Trade size ($5) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
-            submittedAt=now,
-            finalizedAt=now,
+            submittedAt=None,
+            finalizedAt=None,
             telemetry=None  # Telemetry stays None when not returned by real receipt; never fabricated
         ),
         execution=ExecutionState(
@@ -141,7 +141,7 @@ def get_demo_scenarios() -> List[AgentProposal]:
             error="Policy rule violation: Proposed spend of $2,500 exceeds maximum allowable single trade ceiling of $500.",
             mode="SIMULATION"
         ),
-        state="POLICY_FAILED",
+        state="GENLAYER_NOT_SUBMITTED",
         isDemo=True
     )
 
@@ -198,13 +198,13 @@ def get_demo_scenarios() -> List[AgentProposal]:
         genlayer=GenLayerResult(
             network="studionet",
             chainId=61999,
-            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-            txHash="0xd3m0_fixture_insufficient_tx_hash_00000000000000000000000000000000001",
-            txStatus="FINALIZED",
+            contractAddress=None,
+            txHash=None,
+            txStatus="NOT_APPLICABLE",
             decision="INSUFFICIENT_DATA",
             reasoning="[DEMO FIXTURE] GenLayer adjudication simulation: Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
-            submittedAt=now,
-            finalizedAt=now,
+            submittedAt=None,
+            finalizedAt=None,
             telemetry=None
         ),
         execution=ExecutionState(
@@ -262,13 +262,13 @@ def get_demo_scenarios() -> List[AgentProposal]:
         genlayer=GenLayerResult(
             network="studionet",
             chainId=61999,
-            contractAddress="0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-            txHash="0xd3m0_fixture_rejected_tx_hash_00000000000000000000000000000000001",
-            txStatus="FINALIZED",
+            contractAddress=None,
+            txHash=None,
+            txStatus="NOT_APPLICABLE",
             decision="REJECT",
             reasoning="[DEMO FIXTURE] GenLayer adjudication rule rejection: Proposed slippage of 8.5% exceeds the safety threshold (max 1.0%). High MEV sandwich risk detected.",
-            submittedAt=now,
-            finalizedAt=now,
+            submittedAt=None,
+            finalizedAt=None,
             telemetry=None
         ),
         execution=ExecutionState(

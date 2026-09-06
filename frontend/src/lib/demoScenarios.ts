@@ -62,14 +62,14 @@ export const CANONICAL_DEMO_SCENARIOS: Record<string, AgentProposal> = {
     genlayer: {
       network: "studionet",
       chainId: 61999,
-      contractAddress: "0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-      txHash: "0xd3m0_fixture_approved_tx_hash_00000000000000000000000000000000001",
-      txStatus: "FINALIZED",
+      contractAddress: null,
+      txHash: null,
+      txStatus: "NOT_APPLICABLE",
       decision: "APPROVE",
       reasoning:
         "[DEMO FIXTURE] GenLayer adjudication simulation: Trade size ($5.00) adheres to user risk bounds, verified liquidity depth, and rationale is sound.",
-      submittedAt: DEMO_TIMESTAMP,
-      finalizedAt: DEMO_TIMESTAMP,
+      submittedAt: null,
+      finalizedAt: null,
       telemetry: null // Telemetry strictly null when not returned by real node
     },
     execution: {
@@ -137,7 +137,7 @@ export const CANONICAL_DEMO_SCENARIOS: Record<string, AgentProposal> = {
         "Execution gate blocked: Proposed spend of $2,500 exceeds maximum allowable single trade ceiling of $500.",
       mode: "SIMULATION"
     },
-    state: "POLICY_FAILED",
+    state: "GENLAYER_NOT_SUBMITTED",
     isDemo: true
   },
 
@@ -195,14 +195,14 @@ export const CANONICAL_DEMO_SCENARIOS: Record<string, AgentProposal> = {
     genlayer: {
       network: "studionet",
       chainId: 61999,
-      contractAddress: "0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-      txHash: "0xd3m0_fixture_insufficient_tx_hash_00000000000000000000000000000000001",
-      txStatus: "FINALIZED",
+      contractAddress: null,
+      txHash: null,
+      txStatus: "NOT_APPLICABLE",
       decision: "INSUFFICIENT_DATA",
       reasoning:
         "[DEMO FIXTURE] GenLayer adjudication simulation: Critical evidence missing or unverified: PRICE_FEED, LIQUIDITY_CHECK, CONTRACT_VERIFICATION. Adjudication cannot establish safety.",
-      submittedAt: DEMO_TIMESTAMP,
-      finalizedAt: DEMO_TIMESTAMP,
+      submittedAt: null,
+      finalizedAt: null,
       telemetry: null
     },
     execution: {
@@ -263,14 +263,14 @@ export const CANONICAL_DEMO_SCENARIOS: Record<string, AgentProposal> = {
     genlayer: {
       network: "studionet",
       chainId: 61999,
-      contractAddress: "0x0000000000000000000000000000000000000000 (DEMO FIXTURE)",
-      txHash: "0xd3m0_fixture_rejected_tx_hash_00000000000000000000000000000000001",
-      txStatus: "FINALIZED",
+      contractAddress: null,
+      txHash: null,
+      txStatus: "NOT_APPLICABLE",
       decision: "REJECT",
       reasoning:
         "[DEMO FIXTURE] GenLayer adjudication rule rejection: Proposed slippage of 8.5% exceeds the safety threshold (max 1.0%). High MEV sandwich risk detected.",
-      submittedAt: DEMO_TIMESTAMP,
-      finalizedAt: DEMO_TIMESTAMP,
+      submittedAt: null,
+      finalizedAt: null,
       telemetry: null
     },
     execution: {
@@ -313,6 +313,7 @@ export function getDemoScenarioById(scenarioId: string): AgentProposal | null {
 export function createDecisionProofFromProposal(p: AgentProposal): DecisionProof {
   const verifiedCount = p.evidence.filter(e => e.status === "VERIFIED").length;
   const unavailableCount = p.evidence.filter(e => e.status === "UNAVAILABLE").length;
+  const isDemo = p.isDemo === true;
 
   return {
     proposalId: p.id,
@@ -327,15 +328,16 @@ export function createDecisionProofFromProposal(p: AgentProposal): DecisionProof
       verifiedItems: verifiedCount,
       unavailableItems: unavailableCount
     },
-    genlayerContract: p.genlayer?.contractAddress || null,
-    genlayerTxHash: p.genlayer?.txHash || null,
-    txStatus: p.genlayer?.txStatus || null,
+    // Demo fixtures must never surface fake contract or tx hash values
+    genlayerContract: isDemo ? null : (p.genlayer?.contractAddress || null),
+    genlayerTxHash: isDemo ? null : (p.genlayer?.txHash || null),
+    txStatus: isDemo ? "NOT_APPLICABLE" : (p.genlayer?.txStatus || null),
     finalDecision: p.genlayer?.decision || "UNAVAILABLE",
-    decisionTimestamp: p.genlayer?.finalizedAt || null,
+    decisionTimestamp: isDemo ? null : (p.genlayer?.finalizedAt || null),
     decisionReasoning: p.genlayer?.reasoning || null,
     executionStatus: p.execution.status,
-    executionTxHash: p.execution.txHash,
-    executedAt: p.execution.executedAt,
+    executionTxHash: isDemo ? null : p.execution.txHash,
+    executedAt: isDemo ? null : p.execution.executedAt,
     auditTrail: [
       {
         stage: "PROPOSED",
@@ -349,13 +351,17 @@ export function createDecisionProofFromProposal(p: AgentProposal): DecisionProof
       },
       ...(p.genlayer ? [{
         stage: "GENLAYER_ADJUDICATION",
-        timestamp: p.genlayer.finalizedAt || p.createdAt,
-        details: `GenLayer decision: ${p.genlayer.decision}. Tx: ${p.genlayer.txHash || "N/A"}`
+        timestamp: p.createdAt,
+        details: isDemo
+          ? `[DEMO FIXTURE] Decision: ${p.genlayer.decision}. No live transaction.`
+          : `GenLayer decision: ${p.genlayer.decision}. Tx: ${p.genlayer.txHash || "N/A"}`
       }] : []),
       {
         stage: "EXECUTION_GATE",
         timestamp: p.createdAt,
-        details: `Status: ${p.execution.status}. Confirmation required: ${p.execution.requiresHumanConfirmation}`
+        details: isDemo
+          ? `Status: ${p.execution.status}. Demo fixture — execution not applicable.`
+          : `Status: ${p.execution.status}. Confirmation required: ${p.execution.requiresHumanConfirmation}`
       }
     ]
   };

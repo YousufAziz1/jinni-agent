@@ -91,15 +91,15 @@
 .light .bg-black\/40,
 .light .bg-black\/60,
 .light .bg-black\/70 {
-  background-color: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(255, 255, 255, 0.92) !important;
   border-color: rgba(226, 232, 240, 0.95) !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03) !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
 }
 
 .light header.border-b {
-  background-color: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(255, 255, 255, 0.92) !important;
   border-color: rgba(226, 232, 240, 0.95) !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
 }
 
 .light .border-white\/5,
@@ -109,9 +109,11 @@
   border-color: rgba(226, 232, 240, 0.95) !important;
 }
 
+/* ===== Card Inner Surfaces (bg-white/[0.02], bg-white/[0.03]) ===== */
 .light .bg-white\/5,
+.light .bg-white\/\[0\.02\],
 .light .bg-white\/\[0\.03\] {
-  background-color: rgba(241, 245, 249, 0.9) !important;
+  background-color: rgba(241, 245, 249, 0.95) !important;
 }
 
 .light .bg-white\/10 {
@@ -122,33 +124,172 @@
   background-color: rgba(203, 213, 225, 0.95) !important;
 }
 
+/* ===== Grayscale Text — High Contrast for White BG ===== */
 .light .text-white {
-  color: #0f172a !important;
+  color: #0f172a !important; /* slate-900 */
 }
 
 .light .text-gray-100 {
-  color: #1e293b !important;
+  color: #0f172a !important; /* slate-900 */
 }
 
 .light .text-gray-200 {
-  color: #334155 !important;
+  color: #1e293b !important; /* slate-800 */
 }
 
 .light .text-gray-300 {
-  color: #475569 !important;
+  color: #334155 !important; /* slate-700 */
 }
 
 .light .text-gray-400 {
-  color: #64748b !important;
+  color: #475569 !important; /* slate-600 */
 }
 
 .light .text-gray-500 {
-  color: #94a3b8 !important;
+  color: #475569 !important; /* slate-600 */
 }
 
-/* Ensure vibrant CTA and colored buttons preserve crisp white text in Light Mode */
-.light .bg-gradient-to-r,
-.light .bg-gradient-to-tr,
+.light .text-gray-600 {
+  color: #334155 !important; /* slate-700 */
+}
+
+/* ===== Colored Text — Dark-Mode Neon → Light-Mode Bold/Readable ===== */
+
+/* Emerald / Green */
+.light .text-emerald-100 { color: #065f46 !important; }
+.light .text-emerald-200 { color: #065f46 !important; }
+.light .text-emerald-200\/80 { color: #065f46 !important; }
+.light .text-emerald-300 { color: #047857 !important; }
+.light .text-emerald-400 { color: #047857 !important; }
+.light .text-emerald-400\/80 { color: #065f46 !important; }
+.light .text-emerald-500 { color: #047857 !important; }
+
+/* Purple */
+.light .text-purple-100 { color: #581c87 !important; }
+.light .text-purple-200 { color: #6d28d9 !important; }
+.light .text-purple-200\/80 { color: #6d28d9 !important; }
+.light .text-purple-300 { color: #6d28d9 !important; }
+.light .text-purple-400 { color: #6d28d9 !important; }
+.light .text-purple-400\/80 { color: #6d28d9 !important; }
+.light .text-purple-500 { color: #6d28d9 !important; }
+
+/* Rose / Red */
+.light .text-rose-100 { color: #9f1239 !important; }
+.light .text-rose-200 { color: #be123c !important; }
+.light .text-rose-200\/80 { color: #be123c !important; }
+.light .text-rose-300 { color: #be123c !important; }
+.light .text-rose-400 { color: #be123c !important; }
+.light .text-rose-400\/80 { color: #be123c !important; }
+.light .text-rose-500 { color: #be123c !important; }
+
+/* Teal */
+.light .text-teal-100 { color: #115e59 !important; }
+.light .text-teal-200 { color: #0f766e !important; }
+.light .text-teal-200\/80 { color: #0f766e !important; }
+.light .text-teal-300 { color: #0f766e !important; }
+.light .text-teal-400 { color: #0f766e !important; }
+.light .text-teal-400\/80 { color: #0f766e !important; }
+.light .text-teal-500 { color: #0f766e !important; }
+
+/* Amber / Yellow */
+.light .text-amber-100 { color: #78350f !important; }
+.light .text-amber-200 { color: #92400e !important; }
+.light .text-amber-200\/80 { color: #92400e !important; }
+.light .text-amber-300 { color: #92400e !important; }
+.light .text-amber-400 { color: #92400e !important; }
+.light .text-amber-400\/80 { color: #92400e !important; }
+.light .text-amber-500 { color: #92400e !important; }
+
+/* Blue */
+.light .text-blue-100 { color: #1e3a8a !important; }
+.light .text-blue-200 { color: #1d4ed8 !important; }
+.light .text-blue-300 { color: #1d4ed8 !important; }
+.light .text-blue-400 { color: #1d4ed8 !important; }
+.light .text-blue-500 { color: #1d4ed8 !important; }
+
+/* ===== Status Badge Backgrounds — Stronger on White ===== */
+.light .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.15) !important; }
+.light .bg-emerald-500\/15 { background-color: rgba(16, 185, 129, 0.18) !important; }
+.light .bg-rose-500\/10 { background-color: rgba(244, 63, 94, 0.15) !important; }
+.light .bg-rose-500\/15 { background-color: rgba(244, 63, 94, 0.18) !important; }
+.light .bg-purple-500\/10 { background-color: rgba(168, 85, 247, 0.15) !important; }
+.light .bg-purple-500\/15 { background-color: rgba(168, 85, 247, 0.18) !important; }
+.light .bg-amber-500\/10 { background-color: rgba(245, 158, 11, 0.15) !important; }
+.light .bg-amber-500\/15 { background-color: rgba(245, 158, 11, 0.18) !important; }
+.light .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.15) !important; }
+.light .bg-blue-500\/15 { background-color: rgba(59, 130, 246, 0.18) !important; }
+.light .bg-gray-500\/10 { background-color: rgba(100, 116, 139, 0.15) !important; }
+
+/* Status badge borders — slightly bolder */
+.light .border-emerald-500\/30 { border-color: rgba(16, 185, 129, 0.35) !important; }
+.light .border-rose-500\/30 { border-color: rgba(244, 63, 94, 0.35) !important; }
+.light .border-purple-500\/30 { border-color: rgba(168, 85, 247, 0.35) !important; }
+.light .border-amber-500\/30 { border-color: rgba(245, 158, 11, 0.35) !important; }
+.light .border-blue-500\/30 { border-color: rgba(59, 130, 246, 0.35) !important; }
+.light .border-gray-500\/30 { border-color: rgba(100, 116, 139, 0.35) !important; }
+
+/* ===== Hero Gradient — visible on white ===== */
+.light .from-white\/\[0\.08\] {
+  --tw-gradient-from: rgba(241, 245, 249, 0.95) !important;
+}
+.light .via-black\/40 {
+  --tw-gradient-via: rgba(248, 250, 252, 0.8) !important;
+}
+.light .to-black\/70 {
+  --tw-gradient-to: rgba(241, 245, 249, 0.98) !important;
+}
+.light .bg-gradient-to-b {
+  background: linear-gradient(to bottom, rgba(241, 245, 249, 0.95), rgba(255, 255, 255, 0.88), rgba(241, 245, 249, 0.98)) !important;
+}
+
+/* ===== Gradient / Clip Text — Hero "Independent judgment." & Logo "Agent" ===== */
+.light .bg-clip-text,
+.light .text-transparent.bg-clip-text,
+.light span.bg-clip-text,
+.light .bg-gradient-to-r.bg-clip-text,
+.light span.bg-gradient-to-r.bg-clip-text,
+.light .text-transparent.bg-clip-text.bg-gradient-to-r {
+  background: linear-gradient(135deg, #0040c0 0%, #6b21a8 50%, #047857 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  display: inline-block;
+}
+
+/* ===== Backdrop Blur — brighter in day mode ===== */
+.light .backdrop-blur-md,
+.light .backdrop-blur-xl {
+  backdrop-filter: blur(12px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.1) !important;
+}
+
+/* ===== Code / Monospace Text ===== */
+.light code,
+.light .font-mono {
+  color: #1e293b !important;
+}
+
+/* Keep code inside colored badges readable */
+.light .text-purple-300 code,
+.light .text-purple-300 .font-mono {
+  color: #6d28d9 !important;
+}
+
+/* ===== Decorative Glow Blobs — subtle in day mode ===== */
+.light .bg-\[var\(--accent\)\]\/10,
+.light .bg-\[var\(--accent\)\]\/15 {
+  background-color: rgba(0, 82, 224, 0.06) !important;
+}
+.light .bg-purple-600\/10 {
+  background-color: rgba(124, 58, 237, 0.06) !important;
+}
+
+/* ===== Ensure vibrant CTA and colored buttons preserve crisp white text in Light Mode ===== */
+.light button.bg-gradient-to-r,
+.light a.bg-gradient-to-r,
+.light .bg-gradient-to-r:not(.bg-clip-text):not(span),
+.light .bg-gradient-to-tr:not(.bg-clip-text):not(span),
 .light .bg-\[var\(--accent\)\],
 .light .bg-purple-600,
 .light .bg-purple-700,
@@ -159,23 +300,34 @@
 .light .bg-blue-600,
 .light .btn-primary {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
-.light .bg-gradient-to-r *,
-.light .bg-gradient-to-tr *,
-.light .bg-\[var\(--accent\)\] *,
-.light .bg-purple-600 *,
-.light .bg-purple-700 *,
-.light .bg-emerald-500 *,
-.light .bg-emerald-600 *,
-.light .bg-rose-500 *,
-.light .bg-rose-600 *,
-.light .bg-blue-600 *,
-.light .btn-primary * {
+.light button.bg-gradient-to-r *:not(.bg-clip-text),
+.light a.bg-gradient-to-r *:not(.bg-clip-text),
+.light .bg-gradient-to-r:not(.bg-clip-text):not(span) *:not(.bg-clip-text),
+.light .bg-gradient-to-tr:not(.bg-clip-text):not(span) *:not(.bg-clip-text),
+.light .bg-\[var\(--accent\)\] *:not(.bg-clip-text),
+.light .bg-purple-600 *:not(.bg-clip-text),
+.light .bg-purple-700 *:not(.bg-clip-text),
+.light .bg-emerald-500 *:not(.bg-clip-text),
+.light .bg-emerald-600 *:not(.bg-clip-text),
+.light .bg-rose-500 *:not(.bg-clip-text),
+.light .bg-rose-600 *:not(.bg-clip-text),
+.light .bg-blue-600 *:not(.bg-clip-text),
+.light .btn-primary *:not(.bg-clip-text) {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
-/* Light Mode inputs & forms */
+/* Simulate confirmation button (amber to emerald) - deep vibrant gradient in light mode */
+.light .bg-gradient-to-r.from-amber-500.to-emerald-500 {
+  background: linear-gradient(to right, #b45309, #047857) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ===== Light Mode inputs & forms ===== */
 .light input,
 .light select,
 .light textarea {
@@ -189,9 +341,26 @@
   color: #94a3b8 !important;
 }
 
-/* Modals & Backdrop */
+/* ===== Modals & Backdrop ===== */
 .light .bg-black\/80 {
   background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* ===== Ping animation dot — keep colored ===== */
+.light .animate-ping {
+  background-color: var(--accent) !important;
+}
+
+/* ===== Scrollbar — lighter in day mode ===== */
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Background Animations */

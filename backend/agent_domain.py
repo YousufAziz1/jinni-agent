@@ -10,13 +10,18 @@ ProposalState = Literal[
     "POLICY_CHECKING",
     "POLICY_PASSED",
     "POLICY_FAILED",
+    "SUBMITTING_TO_GENLAYER",
+    "GENLAYER_NOT_SUBMITTED",
     "GENLAYER_PENDING",
     "GENLAYER_ACCEPTED",
     "GENLAYER_FINALIZED",
+    "APPROVED",
     "AWAITING_CONFIRMATION",
     "READY_FOR_EXECUTION",
     "EXECUTING",
     "EXECUTED",
+    "EXECUTION_FAILED",
+    "CANCELLED",
     "REJECTED",
     "DISPUTED",
     "INSUFFICIENT_DATA"
@@ -72,7 +77,7 @@ class GenLayerResult(BaseModel):
     chainId: int = 61999
     contractAddress: Optional[str] = None
     txHash: Optional[str] = None
-    txStatus: Optional[Literal["PENDING", "ACCEPTED", "FINALIZED", "FAILED", "UNKNOWN"]] = None
+    txStatus: Optional[Literal["PENDING", "ACCEPTED", "FINALIZED", "FAILED", "UNKNOWN", "NOT_APPLICABLE"]] = None
     decision: GenLayerDecision = "UNAVAILABLE"
     reasoning: Optional[str] = None
     submittedAt: Optional[str] = None

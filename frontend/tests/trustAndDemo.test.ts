@@ -99,6 +99,12 @@ describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test S
       for (const sc of scenarios) {
         assert.equal(sc.execution.txHash, null, `Scenario ${sc.id} must not have execution.txHash`);
         assert.notEqual(sc.execution.status, 'EXECUTED', `Scenario ${sc.id} must not be EXECUTED`);
+        // Demo genlayer blocks must have null txHash and null contractAddress
+        if (sc.genlayer) {
+          assert.equal(sc.genlayer.txHash, null, `Scenario ${sc.id} genlayer.txHash must be null`);
+          assert.equal(sc.genlayer.contractAddress, null, `Scenario ${sc.id} genlayer.contractAddress must be null`);
+          assert.equal(sc.genlayer.txStatus, 'NOT_APPLICABLE', `Scenario ${sc.id} genlayer.txStatus must be NOT_APPLICABLE`);
+        }
       }
     });
 
@@ -125,7 +131,8 @@ describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test S
 
     it('getSettlementLabel correctly differentiates simulation/fixture from genuine settlement', () => {
       assert.equal(getSettlementLabel(null), 'Not executed');
-      assert.equal(getSettlementLabel({ isDemo: true, txHash: '0x123' }), 'Simulation completed (Demo fixture — not on-chain)');
+      assert.equal(getSettlementLabel({ isDemo: true, txHash: '0x123' }), 'Demo fixture — no live transaction');
+      assert.equal(getSettlementLabel({ isDemo: true, txHash: null }), 'Demo fixture — no live transaction');
       assert.equal(getSettlementLabel({ isDemo: false, txHash: '0xsim_test' }), 'Simulated execution (Preview mode)');
       assert.equal(
         getSettlementLabel({
@@ -242,21 +249,24 @@ describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test S
     });
   });
 
-  // 9. FINALIZED is not converted into consensus or majority agreement
+  // 9. Demo fixtures separate decision state from transaction state
   describe('9. Separation of Powers: Tx Status vs Decision', () => {
-    it('FINALIZED transaction status can have REJECT decision without flipping to approve', () => {
+    it('NOT_APPLICABLE transaction status can have REJECT decision without flipping to approve', () => {
       const rejection = getDemoScenarioById('demo-genlayer-rejection-004')!;
-      assert.equal(rejection.genlayer?.txStatus, 'FINALIZED');
+      assert.equal(rejection.genlayer?.txStatus, 'NOT_APPLICABLE');
       assert.equal(rejection.genlayer?.decision, 'REJECT');
       assert.notEqual(rejection.genlayer?.decision, 'APPROVE');
       assert.equal(rejection.execution.status, 'BLOCKED');
+      // Demo fixtures must have null txHash
+      assert.equal(rejection.genlayer?.txHash, null);
     });
 
-    it('FINALIZED transaction status can have INSUFFICIENT_DATA decision', () => {
+    it('NOT_APPLICABLE transaction status can have INSUFFICIENT_DATA decision', () => {
       const insufficient = getDemoScenarioById('demo-insufficient-evidence-003')!;
-      assert.equal(insufficient.genlayer?.txStatus, 'FINALIZED');
+      assert.equal(insufficient.genlayer?.txStatus, 'NOT_APPLICABLE');
       assert.equal(insufficient.genlayer?.decision, 'INSUFFICIENT_DATA');
       assert.equal(insufficient.execution.status, 'BLOCKED');
+      assert.equal(insufficient.genlayer?.txHash, null);
     });
   });
 
@@ -323,11 +333,14 @@ describe('JINNI Agent — Trust, Runtime Capability, and Demo Reliability Test S
       assert.equal(stages.includes('GENLAYER_ADJUDICATION'), false);
     });
 
-    it('decision proof for safe proposal includes genlayer details', () => {
+    it('decision proof for safe proposal includes genlayer details but null hashes for demo', () => {
       const safe = getDemoScenarioById('demo-safe-001')!;
       const proof = createDecisionProofFromProposal(safe);
 
-      assert.ok(proof.genlayerTxHash);
+      // Demo proofs must NOT expose synthetic hashes
+      assert.equal(proof.genlayerTxHash, null, 'Demo proof genlayerTxHash must be null');
+      assert.equal(proof.genlayerContract, null, 'Demo proof genlayerContract must be null');
+      assert.equal(proof.txStatus, 'NOT_APPLICABLE', 'Demo proof txStatus must be NOT_APPLICABLE');
       assert.equal(proof.finalDecision, 'APPROVE');
       const stages = proof.auditTrail.map(a => a.stage);
       assert.ok(stages.includes('GENLAYER_ADJUDICATION'));

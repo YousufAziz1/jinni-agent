@@ -91,6 +91,7 @@ export function getRuntimeCapability(params: {
 export function isSettledOnSepolia(receipt: { txHash?: string | null; chainId?: number | null; isDemo?: boolean } | null | undefined): boolean {
   if (!receipt || !receipt.txHash) return false;
   if (receipt.isDemo) return false;
+  // Defensive: reject known synthetic prefixes even if isDemo somehow missed
   if (receipt.txHash.startsWith("0xd3m0") || receipt.txHash.startsWith("0xsim")) return false;
   if (receipt.chainId !== undefined && receipt.chainId !== null && receipt.chainId !== SEPOLIA_CHAIN_ID) return false;
   return true;
@@ -100,9 +101,12 @@ export function isSettledOnSepolia(receipt: { txHash?: string | null; chainId?: 
  * Returns a truthful settlement status text for UI display
  */
 export function getSettlementLabel(receipt: { txHash?: string | null; chainId?: number | null; isDemo?: boolean } | null | undefined): string {
-  if (!receipt || !receipt.txHash) return "Not executed";
-  if (receipt.isDemo || receipt.txHash.startsWith("0xd3m0")) {
-    return "Simulation completed (Demo fixture — not on-chain)";
+  if (!receipt || !receipt.txHash) {
+    if (receipt?.isDemo) return "Demo fixture — no live transaction";
+    return "Not executed";
+  }
+  if (receipt.isDemo) {
+    return "Demo fixture — no live transaction";
   }
   if (receipt.txHash.startsWith("0xsim")) {
     return "Simulated execution (Preview mode)";

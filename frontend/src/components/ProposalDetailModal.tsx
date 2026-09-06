@@ -25,7 +25,7 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
 }) => {
   if (!proposal) return null;
 
-  const isLiveTx = !proposal.isDemo && Boolean(proposal.genlayer?.txHash && !proposal.genlayer.txHash.startsWith("0xd3m0"));
+  const isLiveTx = !proposal.isDemo && Boolean(proposal.genlayer?.txHash);
   const decisionBadge = proposal.genlayer?.decision 
     ? getDecisionBadgeProps(proposal.genlayer.decision, proposal.isDemo, isLiveTx)
     : null;

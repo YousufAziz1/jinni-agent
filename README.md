@@ -230,11 +230,11 @@ Each adjudicated trade generates a **Decision Audit Proof** binding the complete
 JINNI Agent provides four deterministic demo fixtures labeled as **`[DEMO FIXTURE]`**:
 
 1. **Valid Trade (Approved)**: $5 LINK buy within thresholds with verified feeds. Evaluates to Policy `PASS`, GenLayer `APPROVE`, and enters `AWAITING_USER_CONFIRMATION`.
-2. **Policy Violation (Rejected)**: $2,500 UNI trade exceeding the $500 ceiling. Evaluates to Policy `FAIL` and is immediately `BLOCKED`.
-3. **Conflicting Oracle (Disputed)**: $260 WETH swap where DEX spot diverges 14% from reference oracle. Evaluates to GenLayer `DISPUTE` and is `BLOCKED`.
+2. **Policy Violation (Blocked)**: $2,500 UNI trade exceeding the $500 ceiling. Evaluates to Policy `FAIL`, `GENLAYER_NOT_SUBMITTED`, and is immediately `BLOCKED`.
+3. **GenLayer Rejection (Blocked)**: $260 WETH swap with 8.5% slippage exceeding the 1.0% safety threshold. Evaluates to GenLayer `REJECT` and is `BLOCKED`.
 4. **Insufficient Evidence (Blocked)**: Trade with unverified contract and missing liquidity. Evaluates to `INSUFFICIENT_DATA` and is `BLOCKED`.
 
-*Demo fixtures use distinct synthetic hashes (`0xd3m0_...`) and cannot trigger MetaMask transactions.*
+*Demo fixtures use null transaction hashes and null contract addresses. They are clearly badged as simulations and cannot trigger MetaMask transactions.*
 
 ---
 
@@ -408,7 +408,7 @@ pnpm --dir frontend run build
 
 * **Execution Scope**: Active live wallet execution is supported exclusively on Ethereum Sepolia (`chainId: 11155111`). Multi-chain execution (Base, Arbitrum) is future roadmap scope.
 * **Telemetry Reporting**: Detailed validator distributions are displayed only when returned by the node RPC receipt.
-* **Demo Sandbox**: Pre-seeded demo fixtures are clearly badged as simulations and use mock transaction hashes (`0xd3m0_...`) to ensure full transparency.
+* **Demo Sandbox**: Pre-seeded demo fixtures are clearly badged as simulations with null transaction hashes and null contract addresses, ensuring full transparency.
 
 ---
 

@@ -14,6 +14,7 @@ export type ProposalState =
   | "POLICY_FAILED"
   | "POLICY_PASSED"
   | "SUBMITTING_TO_GENLAYER"
+  | "GENLAYER_NOT_SUBMITTED"
   | "GENLAYER_PENDING"
   | "GENLAYER_ACCEPTED"
   | "GENLAYER_FINALIZED"
@@ -65,7 +66,7 @@ export interface GenLayerResult {
   chainId: number | null;
   contractAddress: string | null;
   txHash: string | null;
-  txStatus: "PENDING" | "ACCEPTED" | "FINALIZED" | "FAILED" | "UNKNOWN" | null;
+  txStatus: "PENDING" | "ACCEPTED" | "FINALIZED" | "FAILED" | "UNKNOWN" | "NOT_APPLICABLE" | null;
   decision: GenLayerDecision;
   reasoning: string | null;
   submittedAt: string | null;

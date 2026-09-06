@@ -37,14 +37,16 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
 
   // Stage 3: Submitted to GenLayer
   let stage3Status: "completed" | "active" | "blocked" | "pending" = "pending";
-  if (proposal.genlayer && proposal.genlayer.txHash) stage3Status = "completed";
+  if (proposal.isDemo && proposal.genlayer) stage3Status = "completed"; // Demo fixture with genlayer block = simulated submission
+  else if (proposal.genlayer && proposal.genlayer.txHash) stage3Status = "completed";
   else if (proposal.state === "SUBMITTING_TO_GENLAYER") stage3Status = "active";
-  else if (stage2Status === "blocked") stage3Status = "blocked";
+  else if (stage2Status === "blocked" || proposal.state === "GENLAYER_NOT_SUBMITTED") stage3Status = "blocked";
 
   // Stage 4: GenLayer Transaction Status
   let stage4Status: "completed" | "active" | "blocked" | "pending" = "pending";
   const genTxStatus = proposal.genlayer?.txStatus;
-  if (genTxStatus === "FINALIZED" || genTxStatus === "ACCEPTED") stage4Status = "completed";
+  if (proposal.isDemo && proposal.genlayer) stage4Status = "completed"; // Demo fixture = simulation complete
+  else if (genTxStatus === "FINALIZED" || genTxStatus === "ACCEPTED") stage4Status = "completed";
   else if (genTxStatus === "PENDING") stage4Status = "active";
   else if (genTxStatus === "FAILED") stage4Status = "blocked";
 
@@ -86,14 +88,18 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
     {
       step: 3,
       title: "Submitted",
-      desc: proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : "Not submitted",
+      desc: proposal.isDemo 
+        ? (proposal.genlayer ? "Demo — No live tx" : "Not submitted")
+        : (proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : "Not submitted"),
       status: stage3Status,
       icon: <Send className="w-4 h-4" />
     },
     {
       step: 4,
       title: "GenLayer Tx",
-      desc: proposal.genlayer?.txStatus || "Pending",
+      desc: proposal.isDemo 
+        ? (proposal.genlayer ? "Simulation" : "N/A")
+        : (proposal.genlayer?.txStatus || "Pending"),
       status: stage4Status,
       icon: <Cpu className="w-4 h-4" />
     },

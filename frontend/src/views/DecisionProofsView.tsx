@@ -40,7 +40,7 @@ export const DecisionProofsView: React.FC<DecisionProofsViewProps> = ({
     );
   });
 
-  const liveProofsCount = proofs.filter(p => !p.proposalId.startsWith('demo-') && !p.genlayerTxHash?.startsWith('0xd3m0')).length;
+  const liveProofsCount = proofs.filter(p => !p.proposalId.startsWith('demo-')).length;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -85,7 +85,7 @@ export const DecisionProofsView: React.FC<DecisionProofsViewProps> = ({
             {filteredProofs.length > 0 ? (
               filteredProofs.map((p) => {
                 const isSelected = selectedProof?.proposalId === p.proposalId;
-                const isDemo = p.proposalId.startsWith('demo-') || (p.genlayerTxHash?.startsWith('0xd3m0') ?? false);
+                const isDemo = p.proposalId.startsWith('demo-');
                 const badge = getDecisionBadgeProps(p.finalDecision, isDemo, !isDemo && Boolean(p.genlayerTxHash));
 
                 return (

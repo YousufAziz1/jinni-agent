@@ -9,8 +9,8 @@ interface DecisionProofViewProps {
 
 export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) => {
   const [copied, setCopied] = useState(false);
-  const isDemo = proof.proposalId.startsWith('demo-') || (proof.genlayerTxHash?.startsWith('0xd3m0') ?? false);
-  const isLiveTx = !isDemo && Boolean(proof.genlayerTxHash && !proof.genlayerTxHash.startsWith("0xd3m0"));
+  const isDemo = proof.proposalId.startsWith('demo-');
+  const isLiveTx = !isDemo && Boolean(proof.genlayerTxHash);
   const decisionBadge = getDecisionBadgeProps(proof.finalDecision, isDemo, isLiveTx);
 
   const handleCopyJson = () => {
@@ -134,14 +134,18 @@ export const DecisionProofView: React.FC<DecisionProofViewProps> = ({ proof }) =
         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
           <span className="text-[10px] uppercase font-bold text-gray-400">GenLayer Contract</span>
           <p className="font-mono text-gray-300 mt-1 truncate">
-            {proof.genlayerContract || 'NOT CONFIGURED'}
+            {isDemo 
+              ? <span className="text-amber-400/80">DEMO FIXTURE — No live contract</span>
+              : (proof.genlayerContract || 'NOT CONFIGURED')}
           </p>
         </div>
 
         <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
           <span className="text-[10px] uppercase font-bold text-gray-400">GenLayer Transaction</span>
           <p className="font-mono text-gray-300 mt-1 truncate">
-            {proof.genlayerTxHash || 'NOT SUBMITTED'}
+            {isDemo 
+              ? <span className="text-amber-400/80">DEMO FIXTURE — No live transaction</span>
+              : (proof.genlayerTxHash || 'NOT SUBMITTED')}
           </p>
         </div>
       </div>
