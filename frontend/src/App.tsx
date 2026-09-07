@@ -11,7 +11,7 @@ import {
 } from './lib/web3';
 import { api } from './lib/api';
 import { agentApi, type ActivityLogItem } from './lib/agentApi';
-import { isGenLayerConfigured, getStoredGenLayerConfig } from './lib/genlayer';
+import { isGenLayerConfigured, getStoredGenLayerConfig, submitProposalToGenLayerOnChain } from './lib/genlayer';
 import { 
   getCanonicalDemoScenarios, 
   getCanonicalDemoProofs,
@@ -284,7 +284,32 @@ export default function App() {
   const handleSubmitToGenLayer = async (proposalId: string) => {
     setSubmitting(true);
     try {
-      const updated = await agentApi.submitToGenLayer(proposalId);
+      const target = proposals.find(p => p.id === proposalId) || activeProposal;
+      let onChainTxHash: string | undefined;
+
+      // Attempt live submission via genlayer-js directly from client browser
+      const config = getStoredGenLayerConfig();
+      if (isGenLayerConfigured(config) && target) {
+        try {
+          const payload = {
+            id: target.id,
+            actionType: target.actionType,
+            asset: target.asset,
+            chain: target.chain,
+            amountUsd: target.amountUsd,
+            slippage: target.slippage,
+            route: target.route,
+            policyVersion: target.policyVersion,
+            agentRationale: target.agentRationale,
+            timestamp: new Date().toISOString()
+          };
+          onChainTxHash = await submitProposalToGenLayerOnChain(config.contractAddress, payload);
+        } catch (clientErr: any) {
+          console.warn("[App] Direct client GenLayer write fallback:", clientErr.message);
+        }
+      }
+
+      const updated = await agentApi.submitToGenLayer(proposalId, onChainTxHash);
       setActiveProposal(updated);
       setProposals(prev => prev.map(p => p.id === updated.id ? updated : p));
 
@@ -293,7 +318,7 @@ export default function App() {
       } else if (updated.genlayer?.decision && updated.genlayer.decision !== "UNAVAILABLE") {
         showToast(`GenLayer Adjudication: ${updated.genlayer.decision}`, 'info');
       } else {
-        const infoMsg = updated.genlayer?.reasoning || 'GenLayer write requires a funded Studionet account. Read-only verification active.';
+        const infoMsg = updated.genlayer?.reasoning || 'GenLayer Intelligent Contract is deployed on Studionet. Transactions must be dispatched with an active client signature.';
         showToast(infoMsg, 'info');
       }
       await refreshAppData();

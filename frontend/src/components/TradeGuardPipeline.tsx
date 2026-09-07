@@ -127,7 +127,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
         : proposal.execution.status === "BLOCKED" 
         ? "Execution Blocked"
         : proposal.execution.status === "WAITING_FOR_GENLAYER" 
-        ? "Awaiting GenLayer Guard"
+        ? "Awaiting Guard"
         : (proposal.execution.status || "Awaiting Guard"),
       status: stage6Status,
       icon: <Lock className="w-4 h-4" />
@@ -171,7 +171,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       </div>
 
       {/* Pipeline Stages Grid (Clean 4-column responsive layout preventing truncation) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-7 gap-2.5 relative">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 relative">
         {stages.map((stage) => {
           let badgeBg = "bg-white/5 border-white/10 text-gray-400";
           let iconColor = "text-gray-400";
@@ -201,7 +201,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
                 </div>
                 <h4 className="text-xs font-bold text-white mb-1 leading-snug">{stage.title}</h4>
               </div>
-              <p className="text-[11px] font-medium opacity-90 leading-tight break-words">{stage.desc}</p>
+              <p className="text-[11px] font-medium opacity-90 leading-tight break-normal whitespace-normal">{stage.desc}</p>
             </div>
           );
         })}

@@ -185,6 +185,7 @@ class CreateProposalRequest(BaseModel):
 
 class SubmitGenLayerRequest(BaseModel):
     proposalId: str
+    txHash: Optional[str] = None
 
 class ExecuteProposalRequest(BaseModel):
     proposalId: str
@@ -506,8 +507,13 @@ def submit_to_genlayer(req: SubmitGenLayerRequest, db: Session = Depends(get_db)
     # Transition state to submitting
     proposal.state = "SUBMITTING_TO_GENLAYER"
 
-    # Submit via GenLayerService
-    genlayer_res = GenLayerService.submit_proposal(proposal)
+    # If client passed an on-chain transaction hash directly
+    if req.txHash:
+        genlayer_res = GenLayerService.poll_transaction_status(req.txHash, proposal.id)
+    else:
+        # Submit via GenLayerService
+        genlayer_res = GenLayerService.submit_proposal(proposal)
+
     proposal.genlayer = genlayer_res
 
     # If no on-chain transaction hash was produced, do not leave state in submitting

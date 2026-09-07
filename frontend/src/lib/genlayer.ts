@@ -1,4 +1,5 @@
 import type { GenLayerDecision } from '../types/agent';
+import { createClient, chains, createAccount, generatePrivateKey } from 'genlayer-js';
 
 export interface GenLayerConfig {
   network: string;
@@ -6,6 +7,22 @@ export interface GenLayerConfig {
   rpcUrl: string;
   contractAddress: string;
   explorerBaseUrl: string;
+}
+
+export async function submitProposalToGenLayerOnChain(
+  contractAddress: string,
+  proposalPayload: any
+): Promise<string> {
+  const pk = generatePrivateKey();
+  const account = createAccount(pk);
+  const client = createClient({ chain: chains.studionet, account });
+  const txHash = await client.writeContract({
+    address: contractAddress as `0x${string}`,
+    functionName: 'adjudicate_proposal',
+    args: [typeof proposalPayload === 'string' ? proposalPayload : JSON.stringify(proposalPayload)],
+    value: 0n
+  });
+  return txHash;
 }
 
 const STORAGE_KEY = "jinni_agent_genlayer_config";

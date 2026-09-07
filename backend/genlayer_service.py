@@ -144,61 +144,20 @@ class GenLayerService:
             except Exception as bridge_err:
                 pass
 
-        # In GenLayer Node JSON-RPC, simulation/read calls use gen_call.
-        rpc_payload = {
-            "jsonrpc": "2.0",
-            "method": "gen_call",
-            "params": [{
-                "type": "write",
-                "to": settings.JINNI_AGENT_CONTRACT_ADDRESS,
-                "data": json.dumps(proposal_payload)
-            }],
-            "id": int(time.time())
-        }
-
-        try:
-            res = requests.post(settings.GENLAYER_RPC, json=rpc_payload, timeout=15)
-            data = res.json()
-            if "error" in data:
-                err_msg = data["error"].get("message", str(data["error"]))
-                return GenLayerResult(
-                    network=settings.GENLAYER_NETWORK,
-                    chainId=settings.GENLAYER_CHAIN_ID,
-                    contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS,
-                    txHash=None,
-                    txStatus="FAILED",
-                    decision="UNAVAILABLE",
-                    reasoning=f"GenLayer execution error: {err_msg}",
-                    submittedAt=now_iso,
-                    telemetry=None
-                )
-
-            # Extract return data if available
-            result_obj = data.get("result", {})
-            return GenLayerResult(
-                network=settings.GENLAYER_NETWORK,
-                chainId=settings.GENLAYER_CHAIN_ID,
-                contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS,
-                txHash=result_obj.get("txHash") or result_obj.get("hash"),
-                txStatus="PENDING",
-                decision="UNAVAILABLE",
-                reasoning="Transaction submitted to GenLayer Intelligent Contract. Awaiting consensus finalization.",
-                submittedAt=now_iso,
-                finalizedAt=None,
-                telemetry=None
-            )
-        except Exception as e:
-            return GenLayerResult(
-                network=settings.GENLAYER_NETWORK,
-                chainId=settings.GENLAYER_CHAIN_ID,
-                contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS,
-                txHash=None,
-                txStatus="FAILED",
-                decision="UNAVAILABLE",
-                reasoning=f"RPC connection failed during submission: {str(e)}",
-                submittedAt=now_iso,
-                telemetry=None
-            )
+        # Fallback if server-side bridge could not produce an on-chain transaction:
+        # Return truthful status requiring client-side signature without crashing on malformed RPC call
+        return GenLayerResult(
+            network=settings.GENLAYER_NETWORK,
+            chainId=settings.GENLAYER_CHAIN_ID,
+            contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS,
+            txHash=None,
+            txStatus="NOT_APPLICABLE",
+            decision="UNAVAILABLE",
+            reasoning="GenLayer Intelligent Contract is deployed on Studionet. Transactions must be dispatched with an active client signature.",
+            submittedAt=None,
+            finalizedAt=None,
+            telemetry=None
+        )
 
     @classmethod
     def poll_transaction_status(cls, tx_hash: str, proposal_id: str) -> GenLayerResult:

@@ -207,11 +207,11 @@ export const agentApi = {
     return proposal;
   },
 
-  async submitToGenLayer(proposalId: string): Promise<AgentProposal> {
+  async submitToGenLayer(proposalId: string, txHash?: string): Promise<AgentProposal> {
     const res = await fetch(`${API_BASE}/agent/genlayer/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proposalId })
+      body: JSON.stringify({ proposalId, txHash })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Submission failed" }));
