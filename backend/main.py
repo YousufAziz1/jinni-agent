@@ -401,7 +401,19 @@ def create_proposal(req: CreateProposalRequest, db: Session = Depends(get_db)):
         agentRationale=req.agentRationale or f"Autonomous proposal to {req.actionType} {req.amount} {req.asset.upper()} based on real-time market telemetry.",
         evidence=evidence,
         state="POLICY_CHECKING",
-        execution=ExecutionState(status="BLOCKED")
+        genlayer=GenLayerResult(
+            network="studionet",
+            chainId=61999,
+            contractAddress=settings.JINNI_AGENT_CONTRACT_ADDRESS if (settings.JINNI_AGENT_CONTRACT_ADDRESS and settings.JINNI_AGENT_CONTRACT_ADDRESS.replace("0", "").replace("x", "") != "") else None,
+            txHash=None,
+            txStatus="NOT_APPLICABLE",
+            decision="UNAVAILABLE",
+            reasoning=None,
+            submittedAt=None,
+            finalizedAt=None,
+            telemetry=None
+        ),
+        execution=ExecutionState(status="WAITING_FOR_GENLAYER")
     )
 
     # Server-Side Policy Evaluation

@@ -410,6 +410,8 @@ export const AgentView: React.FC<AgentViewProps> = ({
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                         : activeProposal.state === 'AWAITING_CONFIRMATION'
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                        : activeProposal.state === 'GENLAYER_NOT_SUBMITTED'
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                         : 'bg-white/5 border-white/10 text-gray-400'
                     }`}>
                       {activeProposal.state}
@@ -559,9 +561,19 @@ export const AgentView: React.FC<AgentViewProps> = ({
 
           {/* Quick List of Recent Proposals */}
           <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-xl">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white font-display mb-4">
-              Stored Proposals ({proposals.length})
-            </h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white font-display">
+                Stored Proposals ({proposals.length})
+              </h4>
+              <div className="flex items-center gap-1.5 text-[10px]">
+                <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  {proposals.filter(p => !p.isDemo).length} Live
+                </span>
+                <span className="px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  {proposals.filter(p => p.isDemo).length} Demo
+                </span>
+              </div>
+            </div>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {proposals.map((p) => (
                 <button
@@ -576,9 +588,13 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-bold text-white">{p.actionType} {p.asset}</span>
                     <span className="text-[11px] text-gray-400 font-mono">${p.amountUsd}</span>
-                    {p.isDemo && (
-                      <span className="text-[9px] font-semibold text-amber-400/80 px-1.5 py-0.2 rounded bg-amber-500/10">
-                        Demo
+                    {p.isDemo ? (
+                      <span className="text-[9px] font-bold text-amber-300 px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/30">
+                        DEMO
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold text-emerald-300 px-1.5 py-0.2 rounded bg-emerald-500/20 border border-emerald-500/30">
+                        LIVE
                       </span>
                     )}
                   </div>

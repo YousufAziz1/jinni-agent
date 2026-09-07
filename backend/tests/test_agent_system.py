@@ -372,6 +372,7 @@ def test_ai_output_alone_cannot_authorize_execution():
     assert status != "READY"
     assert status != "EXECUTED"
     assert status == "WAITING_FOR_GENLAYER"
+    assert state == "GENLAYER_NOT_SUBMITTED"
 
 # -------------------------------------------------------------
 # 4. Demo Scenarios Determinism Tests
@@ -650,6 +651,11 @@ def test_proposal_creation_and_alias_routes():
     assert "proposal" in data
     assert data["isDemo"] is False
     assert data["proposal"]["isDemo"] is False
+    assert data["state"] == "GENLAYER_NOT_SUBMITTED"
+    assert data["genlayer"]["decision"] == "UNAVAILABLE"
+    assert data["genlayer"]["txStatus"] == "NOT_APPLICABLE"
+    assert data["genlayer"]["txHash"] is None
+    assert data["execution"]["status"] == "WAITING_FOR_GENLAYER"
     assert data["execution"]["txHash"] is None
     assert data["policyResult"] == "PASS"
 
@@ -660,6 +666,8 @@ def test_proposal_creation_and_alias_routes():
     assert "proposal" in data_alias
     assert data_alias["isDemo"] is False
     assert data_alias["proposal"]["isDemo"] is False
+    assert data_alias["state"] == "GENLAYER_NOT_SUBMITTED"
+    assert data_alias["genlayer"]["txStatus"] == "NOT_APPLICABLE"
 
 
 

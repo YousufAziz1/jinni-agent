@@ -12,10 +12,15 @@ export const ProposalsView: React.FC<ProposalsViewProps> = ({
   proposals,
   onSelectProposal
 }) => {
-  const [filter, setFilter] = useState<'ALL' | 'APPROVED' | 'BLOCKED' | 'EXECUTED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'LIVE' | 'DEMO' | 'APPROVED' | 'BLOCKED' | 'EXECUTED'>('ALL');
   const [search, setSearch] = useState('');
 
+  const liveCount = proposals.filter(p => !p.isDemo).length;
+  const demoCount = proposals.filter(p => p.isDemo).length;
+
   const filtered = proposals.filter((p) => {
+    if (filter === 'LIVE' && p.isDemo) return false;
+    if (filter === 'DEMO' && !p.isDemo) return false;
     if (filter === 'APPROVED' && p.genlayer?.decision !== 'APPROVE') return false;
     if (filter === 'BLOCKED' && p.execution.status !== 'BLOCKED') return false;
     if (filter === 'EXECUTED' && p.execution.status !== 'EXECUTED') return false;
@@ -43,19 +48,30 @@ export const ProposalsView: React.FC<ProposalsViewProps> = ({
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/5 border border-white/10 text-xs">
-          {(['ALL', 'APPROVED', 'BLOCKED', 'EXECUTED'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
-                filter === f ? 'bg-[var(--accent)] text-white shadow-md' : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        {/* Counters & Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+              {liveCount} LIVE
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300">
+              {demoCount} DEMO FIXTURES
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/5 border border-white/10 text-xs">
+            {(['ALL', 'LIVE', 'DEMO', 'APPROVED', 'BLOCKED', 'EXECUTED'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all ${
+                  filter === f ? 'bg-[var(--accent)] text-white shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -89,8 +105,9 @@ export const ProposalsView: React.FC<ProposalsViewProps> = ({
             <tbody className="divide-y divide-white/5">
               {filtered.length > 0 ? (
                 filtered.map((p) => {
+                  const isLiveTx = !p.isDemo && Boolean(p.genlayer?.txHash);
                   const decisionBadge = p.genlayer?.decision 
-                    ? getDecisionBadgeProps(p.genlayer.decision)
+                    ? getDecisionBadgeProps(p.genlayer.decision, p.isDemo, isLiveTx)
                     : null;
 
                   return (
@@ -98,9 +115,13 @@ export const ProposalsView: React.FC<ProposalsViewProps> = ({
                       <td className="px-5 py-4 font-mono font-semibold text-white">
                         <div className="flex items-center gap-2">
                           <span>{p.id}</span>
-                          {p.isDemo && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {p.isDemo ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               DEMO
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              LIVE
                             </span>
                           )}
                         </div>
@@ -127,12 +148,18 @@ export const ProposalsView: React.FC<ProposalsViewProps> = ({
                       </td>
 
                       <td className="px-5 py-4">
-                        {decisionBadge ? (
+                        {p.isDemo && decisionBadge ? (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${decisionBadge.bgClass} ${decisionBadge.textClass} ${decisionBadge.borderClass}`}>
+                            {decisionBadge.label}
+                          </span>
+                        ) : isLiveTx && decisionBadge ? (
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${decisionBadge.bgClass} ${decisionBadge.textClass} ${decisionBadge.borderClass}`}>
                             {p.genlayer?.decision}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-gray-500 italic">Not Submitted</span>
+                          <span className="text-[10px] text-gray-400 font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                            NOT SUBMITTED
+                          </span>
                         )}
                       </td>
 

@@ -40,7 +40,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
   if (proposal.isDemo && proposal.genlayer) stage3Status = "completed"; // Demo fixture with genlayer block = simulated submission
   else if (proposal.genlayer && proposal.genlayer.txHash) stage3Status = "completed";
   else if (proposal.state === "SUBMITTING_TO_GENLAYER") stage3Status = "active";
-  else if (stage2Status === "blocked" || proposal.state === "GENLAYER_NOT_SUBMITTED") stage3Status = "blocked";
+  else if (stage2Status === "blocked") stage3Status = "blocked";
 
   // Stage 4: GenLayer Transaction Status
   let stage4Status: "completed" | "active" | "blocked" | "pending" = "pending";
@@ -89,8 +89,8 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 3,
       title: "Submitted",
       desc: proposal.isDemo 
-        ? (proposal.genlayer ? "Demo — No live tx" : "Not submitted")
-        : (proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : "Not submitted"),
+        ? (proposal.genlayer ? "Demo — No live tx" : "NOT SUBMITTED")
+        : (proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : "NOT SUBMITTED"),
       status: stage3Status,
       icon: <Send className="w-4 h-4" />
     },
@@ -98,8 +98,8 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 4,
       title: "GenLayer Tx",
       desc: proposal.isDemo 
-        ? (proposal.genlayer ? "Simulation" : "N/A")
-        : (proposal.genlayer?.txStatus || "Pending"),
+        ? (proposal.genlayer ? "Simulation" : "NOT APPLICABLE")
+        : (proposal.genlayer?.txHash ? (proposal.genlayer?.txStatus || "PENDING") : "NOT APPLICABLE"),
       status: stage4Status,
       icon: <Cpu className="w-4 h-4" />
     },
@@ -107,15 +107,15 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 5,
       title: "Decision",
       desc: proposal.isDemo 
-        ? `Demo: ${proposal.genlayer?.decision || "Pending"}` 
-        : (proposal.genlayer?.decision || "Pending"),
+        ? `Demo: ${proposal.genlayer?.decision || "UNAVAILABLE"}` 
+        : (proposal.genlayer?.txHash ? (proposal.genlayer?.decision || "UNAVAILABLE") : "UNAVAILABLE"),
       status: stage5Status,
       icon: <Scale className="w-4 h-4" />
     },
     {
       step: 6,
       title: "Execution Gate",
-      desc: proposal.execution.status,
+      desc: proposal.execution.status || "WAITING_FOR_GENLAYER",
       status: stage6Status,
       icon: <Lock className="w-4 h-4" />
     },
@@ -126,7 +126,7 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
         ? "Executed on Sepolia" 
         : proposal.isDemo 
         ? "Demo Fixture" 
-        : "Not Executed",
+        : (proposal.execution.status === "EXECUTED" ? "Executed" : "NOT EXECUTED"),
       status: stage7Status,
       icon: <CheckCircle2 className="w-4 h-4" />
     }

@@ -59,8 +59,11 @@ export const DecisionProofsView: React.FC<DecisionProofsViewProps> = ({
           <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10 text-gray-300">
             {proofs.length} TOTAL PROOFS
           </span>
-          <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-purple-500/10 border border-purple-500/30 text-purple-300">
+          <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
             {liveProofsCount} LIVE RECORDED
+          </span>
+          <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300">
+            {proofs.length - liveProofsCount} DEMO FIXTURES
           </span>
         </div>
       </div>

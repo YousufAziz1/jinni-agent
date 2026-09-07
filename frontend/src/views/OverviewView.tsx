@@ -38,10 +38,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onSelectScenario,
   onConnectWallet
 }) => {
-  const totalCount = proposals.length;
-  const approvedCount = proposals.filter(p => p.genlayer?.decision === 'APPROVE').length;
-  const blockedCount = proposals.filter(p => p.execution.status === 'BLOCKED').length;
-  const executedCount = proposals.filter(p => p.execution.status === 'EXECUTED' && !p.isDemo).length;
+  const liveProposals = proposals.filter(p => !p.isDemo);
+  const demoProposals = proposals.filter(p => p.isDemo);
+
+  const liveTotalCount = liveProposals.length;
+  const demoTotalCount = demoProposals.length;
+
+  const liveApprovedCount = liveProposals.filter(p => p.genlayer?.decision === 'APPROVE').length;
+  const demoApprovedCount = demoProposals.filter(p => p.genlayer?.decision === 'APPROVE').length;
+
+  const liveBlockedCount = liveProposals.filter(p => p.execution.status === 'BLOCKED').length;
+  const demoBlockedCount = demoProposals.filter(p => p.execution.status === 'BLOCKED').length;
+
+  const liveExecutedCount = liveProposals.filter(p => p.execution.status === 'EXECUTED').length;
+  const demoSimulatedCount = demoProposals.filter(p => p.execution.status === 'EXECUTED').length;
 
   const latestProposal = proposals[0] || null;
 
@@ -193,15 +203,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       {/* Demo Scenarios Bar */}
       <DemoScenariosBar onSelectScenario={onSelectScenario} />
 
-      {/* Key Metrics Grid (Truthfully Formatted) */}
+      {/* Key Metrics Grid (Truthfully Formatted & Separated) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Total Proposals</span>
             <Activity className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white font-display">{totalCount}</div>
-          <span className="text-[11px] text-gray-400 mt-1 block">Stored in local & backend repository</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black text-white font-display">{liveTotalCount}</span>
+            <span className="text-xs font-bold text-emerald-400">LIVE</span>
+          </div>
+          <span className="text-[11px] text-gray-400 mt-1 block">
+            {demoTotalCount} demo fixtures isolated
+          </span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
@@ -209,8 +224,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Approved Decisions</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-display">{approvedCount}</div>
-          <span className="text-[11px] text-emerald-400/80 mt-1 block">Live & fixture approvals recorded</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black text-emerald-400 font-display">{liveApprovedCount}</span>
+            <span className="text-xs font-bold text-emerald-400">LIVE</span>
+          </div>
+          <span className="text-[11px] text-emerald-400/80 mt-1 block">
+            {demoApprovedCount} demo fixture approvals
+          </span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
@@ -218,8 +238,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Safely Blocked</span>
             <XCircle className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-rose-400 font-display">{blockedCount}</div>
-          <span className="text-[11px] text-rose-400/80 mt-1 block">Policy or adjudication blocks</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black text-rose-400 font-display">{liveBlockedCount}</span>
+            <span className="text-xs font-bold text-rose-400">LIVE</span>
+          </div>
+          <span className="text-[11px] text-rose-400/80 mt-1 block">
+            {demoBlockedCount} demo fixture blocks
+          </span>
         </div>
 
         <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
@@ -227,9 +252,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Executed on Sepolia</span>
             <Zap className="w-4 h-4 text-teal-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-teal-400 font-display">{executedCount}</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black text-teal-400 font-display">{liveExecutedCount}</span>
+            <span className="text-xs font-bold text-teal-400">LIVE</span>
+          </div>
           <span className="text-[11px] text-teal-400/80 mt-1 block">
-            {executedCount === 0 ? "0 live receipts verified" : "Confirmed on Sepolia"}
+            {liveExecutedCount === 0 ? "0 live receipts verified" : "Confirmed on Sepolia"}
+            {demoSimulatedCount > 0 && ` (${demoSimulatedCount} demo previews)`}
           </span>
         </div>
       </div>

@@ -149,7 +149,7 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
             GenLayer Independent Adjudication
           </h4>
           <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10">
-            {proposal.genlayer ? (
+            {proposal.genlayer && (proposal.genlayer.txHash || proposal.isDemo) ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -222,9 +222,37 @@ export const ProposalDetailModal: React.FC<ProposalDetailModalProps> = ({
                 )}
               </div>
             ) : (
-              <div className="text-center py-4">
-                <Clock className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">Not yet submitted to GenLayer Intelligent Contract.</p>
+              <div className="py-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs font-semibold text-white">Adjudication Decision</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-gray-400">
+                    UNAVAILABLE (NOT SUBMITTED)
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Proposal has not been submitted to the GenLayer Intelligent Contract. No transaction has occurred and adjudication decisions are unavailable.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/10 text-[11px]">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">GenLayer Submission</span>
+                    <span className="font-semibold text-gray-300">NOT SUBMITTED</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Transaction Status</span>
+                    <span className="font-semibold text-gray-300">NOT APPLICABLE</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Execution Gate</span>
+                    <span className="font-semibold text-gray-300">{proposal.execution.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Execution</span>
+                    <span className="font-semibold text-gray-300">NOT EXECUTED</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>

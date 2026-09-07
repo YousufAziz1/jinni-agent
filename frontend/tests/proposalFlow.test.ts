@@ -147,10 +147,21 @@ describe('JINNI Agent — Live Proposal Flow & Route Validation Test Suite', () 
         slippage: '0.5%',
         route: 'Uniswap V3',
         policyResult: 'PASS',
-        state: 'GENLAYER_PENDING',
+        state: 'GENLAYER_NOT_SUBMITTED',
         isDemo: false,
         evidence: [],
-        genlayer: null,
+        genlayer: {
+          network: 'studionet',
+          chainId: 61999,
+          contractAddress: '0xa54cF1bBCfe4456b6194658699aab540fBeF046c',
+          txHash: null,
+          txStatus: 'NOT_APPLICABLE',
+          decision: 'UNAVAILABLE',
+          reasoning: null,
+          submittedAt: null,
+          finalizedAt: null,
+          telemetry: null
+        },
         execution: {
           status: 'WAITING_FOR_GENLAYER',
           requiresHumanConfirmation: true,
@@ -181,9 +192,13 @@ describe('JINNI Agent — Live Proposal Flow & Route Validation Test Suite', () 
         assert.ok(res);
         assert.equal(res.id, 'prop-test-live-100');
         assert.equal(res.isDemo, false);
+        assert.equal(res.state, 'GENLAYER_NOT_SUBMITTED');
+        assert.equal(res.genlayer?.txHash, null);
+        assert.equal(res.genlayer?.txStatus, 'NOT_APPLICABLE');
+        assert.equal(res.genlayer?.decision, 'UNAVAILABLE');
+        assert.equal(res.execution.status, 'WAITING_FOR_GENLAYER');
         assert.equal(res.execution.txHash, null);
         assert.equal(res.execution.userConfirmed, false);
-        assert.equal(res.state, 'GENLAYER_PENDING');
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -205,7 +220,7 @@ describe('JINNI Agent — Live Proposal Flow & Route Validation Test Suite', () 
         slippage: '0.5%',
         route: 'Uniswap V3',
         policyResult: 'PASS',
-        state: 'GENLAYER_PENDING',
+        state: 'GENLAYER_NOT_SUBMITTED',
         isDemo: false,
         evidence: [],
         genlayer: null,
@@ -239,6 +254,8 @@ describe('JINNI Agent — Live Proposal Flow & Route Validation Test Suite', () 
         assert.ok(res);
         assert.equal(res.id, 'prop-test-live-200');
         assert.equal(res.isDemo, false);
+        assert.equal(res.state, 'GENLAYER_NOT_SUBMITTED');
+        assert.equal(res.execution.txHash, null);
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -295,6 +312,57 @@ describe('JINNI Agent — Live Proposal Flow & Route Validation Test Suite', () 
         assert.equal(sc.isDemo, true);
         assert.equal(sc.execution.txHash, null);
       }
+    });
+  });
+
+  // 6. Demo and Live Counter Separation
+  describe('6. Counter Separation and Non-Contamination', () => {
+    it('should strictly partition demo vs live proposals and counts', () => {
+      const demoProposal = getDemoScenarioById('demo-safe-001')!;
+      const liveProposal: AgentProposal = {
+        id: 'prop-live-counter-test',
+        createdAt: '2026-09-07T00:00:00Z',
+        source: 'human',
+        actorType: 'human',
+        actionType: 'BUY',
+        asset: 'LINK',
+        chain: 'Sepolia',
+        chainId: 11155111,
+        amount: '1.0',
+        amountUsd: '15.0',
+        slippage: '0.5%',
+        route: 'Uniswap V3',
+        policyResult: 'PASS',
+        state: 'GENLAYER_NOT_SUBMITTED',
+        isDemo: false,
+        evidence: [],
+        genlayer: null,
+        execution: {
+          status: 'WAITING_FOR_GENLAYER',
+          requiresHumanConfirmation: true,
+          userConfirmed: false,
+          txHash: null,
+          executedAt: null,
+          error: null,
+          mode: 'WALLET'
+        }
+      };
+
+      const mixed = [demoProposal, liveProposal];
+      const liveOnly = mixed.filter(p => !p.isDemo);
+      const demoOnly = mixed.filter(p => p.isDemo);
+
+      assert.equal(liveOnly.length, 1);
+      assert.equal(liveOnly[0].id, 'prop-live-counter-test');
+      assert.equal(demoOnly.length, 1);
+      assert.equal(demoOnly[0].id, 'demo-safe-001');
+
+      // Live executed count must be 0
+      const liveExecuted = liveOnly.filter(p => p.execution.status === 'EXECUTED');
+      assert.equal(liveExecuted.length, 0);
+
+      // Demo executed count must never pollute live executed count
+      assert.equal(demoOnly.filter(p => !p.isDemo).length, 0);
     });
   });
 
