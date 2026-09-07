@@ -45,17 +45,20 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
   // Stage 4: GenLayer Transaction Status
   let stage4Status: "completed" | "active" | "blocked" | "pending" = "pending";
   const genTxStatus = proposal.genlayer?.txStatus;
-  if (proposal.isDemo && proposal.genlayer) stage4Status = "completed"; // Demo fixture = simulation complete
-  else if (genTxStatus === "FINALIZED" || genTxStatus === "ACCEPTED") stage4Status = "completed";
-  else if (genTxStatus === "PENDING") stage4Status = "active";
-  else if (genTxStatus === "FAILED") stage4Status = "blocked";
+  if (proposal.isDemo && proposal.genlayer) {
+    stage4Status = "completed"; // Demo fixture = simulation complete
+  } else if (proposal.genlayer?.txHash) {
+    if (genTxStatus === "FINALIZED" || genTxStatus === "ACCEPTED") stage4Status = "completed";
+    else if (genTxStatus === "PENDING") stage4Status = "active";
+    else if (genTxStatus === "FAILED") stage4Status = "blocked";
+  }
 
   // Stage 5: Final Decision
   let stage5Status: "completed" | "active" | "blocked" | "pending" = "pending";
   const decision = proposal.genlayer?.decision;
   if (decision === "APPROVE") stage5Status = "completed";
   else if (decision === "REJECT" || decision === "DISPUTE" || decision === "INSUFFICIENT_DATA") stage5Status = "blocked";
-  else if (decision === "UNAVAILABLE" && proposal.genlayer?.txStatus === "FINALIZED") stage5Status = "blocked";
+  else if (decision === "UNAVAILABLE" && proposal.genlayer?.txHash && proposal.genlayer?.txStatus === "FINALIZED") stage5Status = "blocked";
 
   // Stage 6: Execution Gate
   let stage6Status: "completed" | "active" | "blocked" | "pending" = "pending";
@@ -74,23 +77,23 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
     {
       step: 1,
       title: "Proposed",
-      desc: `${proposal.actionType} ${proposal.asset || ""}`,
+      desc: `${proposal.actionType} ${proposal.asset || ""}${proposal.amountUsd ? ` ($${proposal.amountUsd})` : ""}`,
       status: stage1Status,
       icon: <FileText className="w-4 h-4" />
     },
     {
       step: 2,
       title: "Policy Check",
-      desc: proposal.policyResult,
+      desc: proposal.policyResult === "PASS" ? "Policy Passed" : proposal.policyResult === "FAIL" ? "Policy Blocked" : "Checking Policy",
       status: stage2Status,
       icon: <ShieldCheck className="w-4 h-4" />
     },
     {
       step: 3,
-      title: "Submitted",
+      title: "Submission",
       desc: proposal.isDemo 
-        ? (proposal.genlayer ? "Demo — No live tx" : "NOT SUBMITTED")
-        : (proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : "NOT SUBMITTED"),
+        ? (proposal.genlayer ? "Simulated" : "Not Submitted")
+        : (proposal.genlayer?.txHash ? `${proposal.genlayer.txHash.slice(0, 8)}...` : (proposal.state === "SUBMITTING_TO_GENLAYER" ? "Submitting..." : "Not Submitted")),
       status: stage3Status,
       icon: <Send className="w-4 h-4" />
     },
@@ -98,8 +101,8 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 4,
       title: "GenLayer Tx",
       desc: proposal.isDemo 
-        ? (proposal.genlayer ? "Simulation" : "NOT APPLICABLE")
-        : (proposal.genlayer?.txHash ? (proposal.genlayer?.txStatus || "PENDING") : "NOT APPLICABLE"),
+        ? (proposal.genlayer ? "Simulated Consensus" : "Not Applicable")
+        : (proposal.genlayer?.txHash ? (proposal.genlayer?.txStatus || "Pending") : "Not Applicable"),
       status: stage4Status,
       icon: <Cpu className="w-4 h-4" />
     },
@@ -107,15 +110,25 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 5,
       title: "Decision",
       desc: proposal.isDemo 
-        ? `Demo: ${proposal.genlayer?.decision || "UNAVAILABLE"}` 
-        : (proposal.genlayer?.txHash ? (proposal.genlayer?.decision || "UNAVAILABLE") : "UNAVAILABLE"),
+        ? (proposal.genlayer?.decision ? `Simulated ${proposal.genlayer.decision}` : "Unavailable")
+        : (proposal.genlayer?.txHash ? (proposal.genlayer?.decision || "Pending Consensus") : "Unavailable"),
       status: stage5Status,
       icon: <Scale className="w-4 h-4" />
     },
     {
       step: 6,
       title: "Execution Gate",
-      desc: proposal.execution.status || "WAITING_FOR_GENLAYER",
+      desc: proposal.execution.status === "AWAITING_USER_CONFIRMATION" 
+        ? "Human Signoff Required"
+        : proposal.execution.status === "READY" 
+        ? "Ready for Wallet"
+        : proposal.execution.status === "EXECUTED" 
+        ? "Executed"
+        : proposal.execution.status === "BLOCKED" 
+        ? "Execution Blocked"
+        : proposal.execution.status === "WAITING_FOR_GENLAYER" 
+        ? "Awaiting GenLayer Guard"
+        : (proposal.execution.status || "Awaiting Guard"),
       status: stage6Status,
       icon: <Lock className="w-4 h-4" />
     },
@@ -123,10 +136,10 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
       step: 7,
       title: "Execution",
       desc: proposal.execution.txHash && !proposal.isDemo 
-        ? "Executed on Sepolia" 
+        ? "Sepolia Confirmed" 
         : proposal.isDemo 
-        ? "Demo Fixture" 
-        : (proposal.execution.status === "EXECUTED" ? "Executed" : "NOT EXECUTED"),
+        ? (proposal.execution.status === "EXECUTED" ? "Simulated Preview" : "Demo Fixture")
+        : (proposal.execution.status === "EXECUTED" ? "Executed" : "Not Executed"),
       status: stage7Status,
       icon: <CheckCircle2 className="w-4 h-4" />
     }
@@ -157,8 +170,8 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
         </span>
       </div>
 
-      {/* Pipeline Stages Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 relative">
+      {/* Pipeline Stages Grid (Clean 4-column responsive layout preventing truncation) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-7 gap-2.5 relative">
         {stages.map((stage) => {
           let badgeBg = "bg-white/5 border-white/10 text-gray-400";
           let iconColor = "text-gray-400";
@@ -177,16 +190,18 @@ export const TradeGuardPipeline: React.FC<TradeGuardPipelineProps> = ({ proposal
           return (
             <div 
               key={stage.step}
-              className={`flex flex-col p-3 rounded-xl border transition-all duration-300 ${badgeBg}`}
+              className={`flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-300 min-h-[96px] ${badgeBg}`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                  Step 0{stage.step}
-                </span>
-                <span className={iconColor}>{stage.icon}</span>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    Step 0{stage.step}
+                  </span>
+                  <span className={iconColor}>{stage.icon}</span>
+                </div>
+                <h4 className="text-xs font-bold text-white mb-1 leading-snug">{stage.title}</h4>
               </div>
-              <h4 className="text-xs font-bold text-white mb-0.5 truncate">{stage.title}</h4>
-              <p className="text-[11px] font-medium truncate opacity-90">{stage.desc}</p>
+              <p className="text-[11px] font-medium opacity-90 leading-tight break-words">{stage.desc}</p>
             </div>
           );
         })}

@@ -287,7 +287,15 @@ export default function App() {
       const updated = await agentApi.submitToGenLayer(proposalId);
       setActiveProposal(updated);
       setProposals(prev => prev.map(p => p.id === updated.id ? updated : p));
-      showToast(`Submitted to GenLayer! Decision: ${updated.genlayer?.decision}`, 'success');
+
+      if (updated.genlayer?.txHash) {
+        showToast(`Submitted to GenLayer! Tx: ${updated.genlayer.txHash.slice(0, 10)}...`, 'success');
+      } else if (updated.genlayer?.decision && updated.genlayer.decision !== "UNAVAILABLE") {
+        showToast(`GenLayer Adjudication: ${updated.genlayer.decision}`, 'info');
+      } else {
+        const infoMsg = updated.genlayer?.reasoning || 'GenLayer write requires a funded Studionet account. Read-only verification active.';
+        showToast(infoMsg, 'info');
+      }
       await refreshAppData();
     } catch (e: any) {
       showToast(e.message || 'GenLayer submission failed', 'error');

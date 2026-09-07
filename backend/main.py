@@ -510,6 +510,10 @@ def submit_to_genlayer(req: SubmitGenLayerRequest, db: Session = Depends(get_db)
     genlayer_res = GenLayerService.submit_proposal(proposal)
     proposal.genlayer = genlayer_res
 
+    # If no on-chain transaction hash was produced, do not leave state in submitting
+    if not genlayer_res.txHash:
+        proposal.state = "GENLAYER_NOT_SUBMITTED"
+
     # Evaluate gate
     exec_status, prop_state, _ = ExecutionGate.evaluate_gate(proposal)
     proposal.execution.status = exec_status

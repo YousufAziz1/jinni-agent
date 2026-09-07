@@ -412,6 +412,8 @@ export const AgentView: React.FC<AgentViewProps> = ({
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                         : activeProposal.state === 'GENLAYER_NOT_SUBMITTED'
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        : activeProposal.state === 'SUBMITTING_TO_GENLAYER'
+                        ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 animate-pulse'
                         : 'bg-white/5 border-white/10 text-gray-400'
                     }`}>
                       {activeProposal.state}
@@ -422,14 +424,20 @@ export const AgentView: React.FC<AgentViewProps> = ({
                 {/* Submitting to GenLayer Button */}
                 {activeProposal.policyResult === "PASS" && (!activeProposal.genlayer || activeProposal.genlayer.decision === "UNAVAILABLE") && (
                   <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-3">
-                    <p className="text-purple-200">
+                    <p className="text-purple-200 leading-relaxed">
                       Policy checks passed! Ready for decentralized adjudication by the GenLayer Intelligent Contract.
                     </p>
+                    {activeProposal.genlayer?.reasoning && !activeProposal.genlayer.txHash && (
+                      <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/20 text-[11px] text-purple-300">
+                        <span className="font-bold text-purple-200">GenLayer RPC Telemetry: </span>
+                        <span>{activeProposal.genlayer.reasoning}</span>
+                      </div>
+                    )}
                     <button
                       id="submit-genlayer-btn"
                       disabled={submitting}
                       onClick={() => onSubmitToGenLayer(activeProposal.id)}
-                      className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-md shadow-purple-600/25 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Send className="w-4 h-4" />
                       <span>{submitting ? "Submitting to GenLayer RPC..." : "Submit to GenLayer Guard"}</span>

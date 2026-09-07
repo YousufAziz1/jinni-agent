@@ -34,9 +34,12 @@ class ExecutionGate:
 
         # 2. GenLayer Adjudication Gating
         if not proposal.genlayer or proposal.genlayer.decision == "UNAVAILABLE":
-            if proposal.state == "SUBMITTING_TO_GENLAYER":
-                return "WAITING_FOR_GENLAYER", "SUBMITTING_TO_GENLAYER", "Submitted to GenLayer; awaiting consensus receipt."
-            return "WAITING_FOR_GENLAYER", "GENLAYER_NOT_SUBMITTED", "Policy passed. GenLayer adjudication not submitted."
+            if proposal.genlayer and proposal.genlayer.txHash:
+                return "WAITING_FOR_GENLAYER", "GENLAYER_PENDING", "Submitted to GenLayer; awaiting consensus receipt."
+            return "WAITING_FOR_GENLAYER", "GENLAYER_NOT_SUBMITTED", (
+                proposal.genlayer.reasoning if (proposal.genlayer and proposal.genlayer.reasoning)
+                else "Policy passed. GenLayer adjudication not submitted."
+            )
 
         genlayer_dec = proposal.genlayer.decision
 
