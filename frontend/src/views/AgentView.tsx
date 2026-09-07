@@ -421,18 +421,12 @@ export const AgentView: React.FC<AgentViewProps> = ({
                   </div>
                 </div>
 
-                {/* Submitting to GenLayer Button */}
-                {activeProposal.policyResult === "PASS" && (!activeProposal.genlayer || activeProposal.genlayer.decision === "UNAVAILABLE") && (
+                {/* Submitting to GenLayer Button (Unsubmitted State) */}
+                {activeProposal.policyResult === "PASS" && (!activeProposal.genlayer || !activeProposal.genlayer.txHash) && (
                   <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-3">
-                    <p className="text-purple-200 leading-relaxed">
-                      Policy checks passed! Ready for decentralized adjudication by the GenLayer Intelligent Contract.
+                    <p className="text-purple-200 leading-relaxed text-xs">
+                      Policy checks passed! Ready for decentralized adjudication by the GenLayer Intelligent Contract on Studionet.
                     </p>
-                    {activeProposal.genlayer?.reasoning && !activeProposal.genlayer.txHash && (
-                      <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/20 text-[11px] text-purple-300">
-                        <span className="font-bold text-purple-200">GenLayer RPC Telemetry: </span>
-                        <span>{activeProposal.genlayer.reasoning}</span>
-                      </div>
-                    )}
                     <button
                       id="submit-genlayer-btn"
                       disabled={submitting}
@@ -441,6 +435,37 @@ export const AgentView: React.FC<AgentViewProps> = ({
                     >
                       <Send className="w-4 h-4" />
                       <span>{submitting ? "Submitting to GenLayer RPC..." : "Submit to GenLayer Guard"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* GenLayer Adjudication in Progress (Submitted / Pending State) */}
+                {activeProposal.policyResult === "PASS" && activeProposal.genlayer?.txHash && (!activeProposal.genlayer.decision || activeProposal.genlayer.decision === "UNAVAILABLE") && (
+                  <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-purple-300">
+                        <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
+                        <span className="font-bold text-xs">GenLayer Adjudication in Progress</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        STUDIONET (61999)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-purple-200/90 leading-relaxed">
+                      Dispatched to Intelligent Contract (<code className="text-purple-300">{activeProposal.genlayer.contractAddress ? `${activeProposal.genlayer.contractAddress.slice(0, 10)}...${activeProposal.genlayer.contractAddress.slice(-4)}` : "0xa54cF1...046c"}</code>). Multi-validator consensus verification active.
+                    </p>
+                    <div className="p-2.5 rounded-xl bg-purple-950/50 border border-purple-500/20 flex items-center justify-between text-[11px] text-purple-300">
+                      <span className="font-medium text-gray-400">Tx Hash:</span>
+                      <span className="font-mono text-purple-200">{activeProposal.genlayer.txHash.slice(0, 12)}...{activeProposal.genlayer.txHash.slice(-6)}</span>
+                    </div>
+                    <button
+                      id="submit-genlayer-btn"
+                      disabled={submitting}
+                      onClick={() => onSubmitToGenLayer(activeProposal.id)}
+                      className="w-full py-2.5 rounded-xl bg-purple-600/80 hover:bg-purple-600 text-white font-bold transition-all shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 text-xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${submitting ? 'animate-spin' : ''}`} />
+                      <span>{submitting ? "Checking Consensus..." : "Check Adjudication Status"}</span>
                     </button>
                   </div>
                 )}

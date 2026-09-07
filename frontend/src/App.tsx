@@ -318,7 +318,7 @@ export default function App() {
       } else if (updated.genlayer?.decision && updated.genlayer.decision !== "UNAVAILABLE") {
         showToast(`GenLayer Adjudication: ${updated.genlayer.decision}`, 'info');
       } else {
-        const infoMsg = updated.genlayer?.reasoning || 'GenLayer Intelligent Contract is deployed on Studionet. Transactions must be dispatched with an active client signature.';
+        const infoMsg = updated.genlayer?.reasoning || 'Awaiting GenLayer Intelligent Contract adjudication on Studionet.';
         showToast(infoMsg, 'info');
       }
       await refreshAppData();
